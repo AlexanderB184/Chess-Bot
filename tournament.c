@@ -1,9 +1,5 @@
 #include <dlfcn.h>
-
-#include "bots/alpha_beta.h"
 #include "bots/debug.h"
-#include "bots/id.h"
-#include "bots/minmax.h"
 #include "chess.h"
 #include "chess_gui.h"
 

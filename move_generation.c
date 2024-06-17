@@ -14,7 +14,7 @@ void generate_psuedo_legal_pawn_moves(Slice(Move) buffer, Slice(Move) * moves,
   int row = rank_of(from), col = file_of(from);
   // single forward step
   if (row + dir >= 0 && row + dir < 8 &&
-      board->pieces[index_of(row + dir, col)].type == EMPTY) {
+      board_get_piece(board,index_of(row + dir, col)).type == EMPTY) {
     if (row + dir == 0 || row + dir == 7) {
       Move move = (Move){from, index_of(row + dir, col), QUEEN};
       if (buffer.length < moves->length + 4) {
@@ -46,8 +46,8 @@ void generate_psuedo_legal_pawn_moves(Slice(Move) buffer, Slice(Move) * moves,
   if ((row == 1 && board->turn == WHITE) ||
       (row == 6 && board->turn == BLACK)) {
     if (row + 2 * dir >= 0 && row + 2 * dir < 8 &&
-        board->pieces[index_of(row + dir, col)].type == EMPTY &&
-        board->pieces[index_of(row + 2 * dir, col)].type == EMPTY) {
+        board_get_piece(board,index_of(row + dir, col)).type == EMPTY &&
+        board_get_piece(board,index_of(row + 2 * dir, col)).type == EMPTY) {
       Move move = (Move){from, index_of(row + 2 * dir, col), EMPTY};
       if (buffer.length <= moves->length) {
         fprintf(stderr,
@@ -60,7 +60,7 @@ void generate_psuedo_legal_pawn_moves(Slice(Move) buffer, Slice(Move) * moves,
 
   // capture and enpassent right
   if (col + 1 < 8 && row + dir >= 0 && row + dir < 8 &&
-      (board->pieces[index_of(row + dir, col + 1)].colour == -board->turn ||
+      (board_get_piece(board,index_of(row + dir, col + 1)).colour == -board->turn ||
        (board->enpassent == index_of(row, col + 1)))) {
     if (row + dir == 0 || row + dir == 7) {
       Move move = (Move){from, index_of(row + dir, col + 1), QUEEN};
@@ -89,7 +89,7 @@ void generate_psuedo_legal_pawn_moves(Slice(Move) buffer, Slice(Move) * moves,
 
   // capture and enpassent left
   if (col - 1 >= 0 && row + dir >= 0 && row + dir < 8 &&
-      (board->pieces[index_of(row + dir, col - 1)].colour ==
+      (board_get_piece(board,index_of(row + dir, col - 1)).colour ==
            -board->turn ||
        (board->enpassent == index_of(row, col - 1)))) {
     if (row + dir == 0 || row + dir == 7) {
@@ -127,7 +127,7 @@ void generate_psuedo_legal_knight_moves(Slice(Move) buffer, Slice(Move) * moves,
     int target_row = row + offsets[k][0], target_col = col + offsets[k][1];
     if (target_row >= 0 && target_row < 8 && target_col >= 0 &&
         target_col < 8 &&
-        board->pieces[index_of(target_row, target_col)].colour != board->turn) {
+        board_get_piece(board,index_of(target_row, target_col)).colour != board->turn) {
       Move move = (Move){from, index_of(target_row, target_col), EMPTY};
       if (buffer.length <= moves->length) {
         fprintf(stderr,
@@ -148,16 +148,16 @@ void generate_psuedo_legal_sliding_moves(Slice(Move) buffer,
       if (d_col == 0 && d_row == 0) {
         continue;
       }
-      if ((((d_row == 0 || d_col == 0) && board->pieces[from].type == BISHOP) ||
+      if ((((d_row == 0 || d_col == 0) && board_get_piece(board,from).type == BISHOP) ||
            ((d_row != 0 && d_col != 0) &&
-            (board->pieces[from].type == ROOK)))) {
+            (board_get_piece(board,from).type == ROOK)))) {
         continue;
       }
       int target_row = row + d_row;
       int target_col = col + d_col;
       while (target_row >= 0 && target_row < 8 && target_col >= 0 &&
              target_col < 8) {
-        if (board->pieces[index_of(target_row, target_col)].colour ==
+        if (board_get_piece(board,index_of(target_row, target_col)).colour ==
             board->turn) {
           break;
         }
@@ -169,7 +169,7 @@ void generate_psuedo_legal_sliding_moves(Slice(Move) buffer,
         }
         moves->buffer[moves->length++] = move;
 
-        if (board->pieces[index_of(target_row, target_col)].type != EMPTY) {
+        if (board_get_piece(board,index_of(target_row, target_col)).type != EMPTY) {
           break;
         }
         target_row += d_row;
@@ -191,7 +191,7 @@ void generate_psuedo_legal_king_moves(Slice(Move) buffer, Slice(Move) * moves,
       int target_col = col + d_col;
       if (target_row >= 0 && target_row < 8 && target_col >= 0 &&
           target_col < 8 &&
-          board->pieces[index_of(target_row, target_col)].colour !=
+          board_get_piece(board,index_of(target_row, target_col)).colour !=
               board->turn) {
         Move move = (Move){from, index_of(target_row, target_col), EMPTY};
         if (buffer.length <= moves->length) {
@@ -212,9 +212,9 @@ void generate_psuedo_legal_king_moves(Slice(Move) buffer, Slice(Move) * moves,
   // queen side castle
   if (((board->turn == WHITE && (board->rights & WHITE_QUEEN_SIDE)) ||
        (board->turn == BLACK && (board->rights & BLACK_QUEEN_SIDE))) &&
-      board->pieces[index_of(row, 1)].type == EMPTY &&
-      board->pieces[index_of(row, 2)].type == EMPTY &&
-      board->pieces[index_of(row, 3)].type == EMPTY &&
+      board_get_piece(board,index_of(row, 1)).type == EMPTY &&
+      board_get_piece(board,index_of(row, 2)).type == EMPTY &&
+      board_get_piece(board,index_of(row, 3)).type == EMPTY &&
       !can_be_attacked_by(board, -board->turn, index_of(row, 2)) &&
       !can_be_attacked_by(board, -board->turn, index_of(row, 3))) {
     Move move = (Move){from, index_of(row, 2), EMPTY};
@@ -229,8 +229,8 @@ void generate_psuedo_legal_king_moves(Slice(Move) buffer, Slice(Move) * moves,
   // king side castle
   if (((board->turn == WHITE && (board->rights & WHITE_KING_SIDE)) ||
        (board->turn == BLACK && (board->rights & BLACK_KING_SIDE))) &&
-      board->pieces[index_of(row, 5)].type == EMPTY &&
-      board->pieces[index_of(row, 6)].type == EMPTY &&
+      board_get_piece(board,index_of(row, 5)).type == EMPTY &&
+      board_get_piece(board,index_of(row, 6)).type == EMPTY &&
       !can_be_attacked_by(board, -board->turn, index_of(row, 5)) &&
       !can_be_attacked_by(board, -board->turn, index_of(row, 6))
 
@@ -250,10 +250,10 @@ Slice(Move)
     generate_psuedo_legal_moves(Slice(Move) buffer, const Board* board) {
   Slice(Move) moves = (Slice(Move)){.buffer = buffer.buffer, .length = 0};
   for (size_t from = 0; from < 64; from++) {
-    if (board->turn != board->pieces[from].colour) {
+    if (board->turn != board_get_piece(board,from).colour) {
       continue;
     }
-    switch (board->pieces[from].type) {
+    switch (board_get_piece(board,from).type) {
       case EMPTY:
         break;
       case PAWN:
