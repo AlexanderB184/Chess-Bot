@@ -1,0 +1,30 @@
+#todo
+
+#for chess-lib
+
+draw by repetition not supported
+
+make a game structure of some sort, keeping track of previous board states, potentially add unmake_move and use throughout instead of copymake
+
+gui is lacking, want to support unicode chess characters and use escape characters to replace board in place
+
+replace can_be_attacked_by with a more sophisticated method, tracking pins and such and storing in parallel data structure
+
+create bitboard data structure and replace current board structure
+
+use magic bitboards
+
+#for bot
+
+improve static_evaluation function
+
+  improve piece-square values
+
+  seperate mid-game/end-game piece-square values
+
+  add special considerations for pawns (maybe other pieces but pawns have the most complexity e.g. don't push pawns in front of the king, doubled pawns and isolated pawns are weak, passed pawns are good)
+  
+add delta pruning to quiescence search
+
+implement primary variation search
+
