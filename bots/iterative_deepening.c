@@ -41,7 +41,6 @@ void init_bot(void* dbg_) {
   turn_arena = (Arena){malloc(10 * 1000 * 1000), 0};
 }
 
-// pvs
 Move best_move(const Board* board, size_t time_limit) {
   dbg_mm();
   init_clock();
