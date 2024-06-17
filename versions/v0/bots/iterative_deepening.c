@@ -56,7 +56,6 @@ Move best_move(const Board* board, size_t time_limit) {
                              1009);  // resets transposition table
     double best_eval = -1000000;
     Move best_move = moves.buffer[0];
-    size_t best_move_index = 0;
     for (size_t i = 0; i < moves.length; i++) {
       Move curr_move = moves.buffer[i];
       Board board_after_move = copy_make_move(board, curr_move);
@@ -68,7 +67,6 @@ Move best_move(const Board* board, size_t time_limit) {
       if (eval > best_eval) {
         best_eval = eval;
         best_move = curr_move;
-        best_move_index = i;
       }
     }
     if (get_time_passed() >= time_limit) break;
@@ -77,8 +75,6 @@ Move best_move(const Board* board, size_t time_limit) {
     max_depth++;
     dbg_tds();
 
-    moves.buffer[best_move_index] = moves.buffer[0];
-    moves.buffer[0] = best_move;
   } while (1);
 
   return best_move_so_far;

@@ -2,9 +2,11 @@
 #include "transposition_table.h"
 #include <time.h>
 
-void init_bot();
+void init_id();
 
-Move best_move(const Board* board, size_t time_limit);
+Move best_move_id(const Board* board, size_t time_limit);
+
+Move best_move_id_new(const Board* board, size_t time_limit);
 
 
 extern struct timespec start_time;
