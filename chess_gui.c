@@ -4,22 +4,25 @@
 #include "move_validation.h"
 
 Move get_legal_move(FILE* in, const Board* board) {
-  Scratch_Arena scratch = get_scratch(NULL, 0);
-  if (generate_legal_moves(scratch.arena, board).length == 0) {
-    release_scratch(scratch);
+  Move move_buffer[256];
+  Slice(Move) buffer = {move_buffer, 256};
+  if (generate_legal_moves(buffer, board).length == 0) {
     return (Move){0};  // no legal moves
   }
   Move move;
   do {
     move = get_move(in, board);
   } while (!is_legal_move(board, move));
-  release_scratch(scratch);
   return move;
 }
 
 Move get_move(FILE* in, const Board* board) {
   char cmd[64];
-  (void)fgets(cmd, sizeof(cmd), in);
+  char* c = fgets(cmd, sizeof(cmd), in);
+  if (!c) {
+    fprintf(stderr, "ERROR: fgets failed\n");
+    return (Move){0};
+  }
   String move = strip_string(from_cstr(cmd));
   return parse_move(board, move);
 }
@@ -41,10 +44,8 @@ Move parse_move(const Board* board, String command) {
     return (Move){0};
   }
 
-  move.piece_start_col = command.buffer[0] - 'a';
-  move.piece_start_row = command.buffer[1] - '1';
-  move.piece_end_col = command.buffer[2] - 'a';
-  move.piece_end_row = command.buffer[3] - '1';
+  move.from = command.buffer[0] - 'a' + 8 * (command.buffer[1] - '1');
+  move.to = command.buffer[2] - 'a' + 8 * (command.buffer[3] - '1');
 
   if (command.length == 4) {
     return move;
@@ -75,19 +76,19 @@ Move parse_move(const Board* board, String command) {
 }
 
 void display_board(FILE* out, const Board* board, Piece_Colour turn) {
-  fprintf(out, "\033[u\033[J");
+  // fprintf(out, "\033[u\033[J");
   size_t r = turn == WHITE ? 7 : 0;
   size_t dr = turn == WHITE ? -1 : 1;
   // fprintf(out, " abcdefgh\n");
   for (; r < 8 && r >= 0; r += dr) {
     putc(r + '1', out);
     for (size_t c = 0; c < 8; c++) {
-      Piece p = board->pieces[r][c];
+      Piece p = board_get_piece(board, r * 8 + c);
       if (p.colour == NONE) {
         putc(' ', out);
         continue;
       }
-      char char_to_print;
+      char char_to_print = ' ';
       switch (p.type) {
         case EMPTY:
           char_to_print = ' ';
@@ -109,6 +110,8 @@ void display_board(FILE* out, const Board* board, Piece_Colour turn) {
           break;
         case PAWN:
           char_to_print = 'p';
+          break;
+        default:
           break;
       }
       if (p.colour == BLACK) {

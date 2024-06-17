@@ -2,12 +2,28 @@
 
 #include "board.h"
 
+Piece board_get_piece(const Board* board, int square) {
+  if (square < 0 || square >= 64) {
+    return (Piece){NONE, INVALID};
+  }
+  return board->pieces[square];
+}
+
+void board_set_piece(Board* board, int square, Piece piece) {
+  if (square < 0 || square >= 64) {
+    return;
+  }
+  board->pieces[square] = piece;
+}
+
+void board_move_piece(Board* board, int from, int to) {
+  board_set_piece(board, to, board_get_piece(board, from));
+  board_set_piece(board, from, (Piece){NONE, EMPTY});
+}
+
 void make_move(Board* board, Move move) {
-  int start_row = move.piece_start_row;
-  int start_col = move.piece_start_col;
-  int end_row = move.piece_end_row;
-  int end_col = move.piece_end_col;
-  Piece piece = board->pieces[start_row][start_col];
+  Piece piece = board_get_piece(board, move.from);
+
   if (piece.type == PAWN) {
     board->half_move_count = 0;
   } else {
@@ -15,62 +31,58 @@ void make_move(Board* board, Move move) {
   }
 
   // castling
-  if (piece.type == KING && move.piece_start_col == 4 &&
-      move.piece_end_col == 2) {
-    board->pieces[end_row][3] = board->pieces[start_row][0];
-    board->pieces[start_row][0] = (Piece){NONE, EMPTY};
+  if (piece.type == KING && file_of(move.from) == 4 && file_of(move.to) == 2) {
+    board_move_piece(board, move.from - 4, move.from - 1);
   }
-  if (piece.type == KING && move.piece_start_col == 4 &&
-      move.piece_end_col == 6) {
-    board->pieces[end_row][5] = board->pieces[start_row][7];
-    board->pieces[start_row][7] = (Piece){NONE, EMPTY};
+  if (piece.type == KING && file_of(move.from) == 4 && file_of(move.to) == 6) {
+    board_move_piece(board, move.from + 3, move.from + 1);
   }
 
   // enpassent
-  if (piece.type == PAWN && end_col == board->enpassent_target_col &&
-      start_row == board->enpassent_target_row) {
-    board->pieces[board->enpassent_target_row][board->enpassent_target_col] =
-        (Piece){NONE, EMPTY};
+  if (piece.type == PAWN && file_of(move.to) == file_of(board->enpassent) &&
+      rank_of(move.from) == rank_of(board->enpassent)) {
+    board_set_piece(board, board->enpassent, (Piece){NONE, EMPTY});
   }
 
   // double pawn move
-  if (piece.type == PAWN && abs(end_row - start_row) == 2) {
-    board->enpassent_target_row = end_row;
-    board->enpassent_target_col = end_col;
+  if (piece.type == PAWN && abs(rank_of(move.to) - rank_of(move.from)) == 2) {
+    board->enpassent = move.to;
   } else {
-    board->enpassent_target_row = -1;
-    board->enpassent_target_col = -1;
+    board->enpassent = -1;
   }
-
-  board->pieces[end_row][end_col] = board->pieces[start_row][start_col];
-
-  board->pieces[start_row][start_col] = (Piece){NONE, EMPTY};
+  board_move_piece(board, move.from, move.to);
 
   // promotion
-  if (piece.type == PAWN && (end_row == 0 || end_row == 7)) {
-    board->pieces[end_row][end_col].type = move.promote_to;
+  if (piece.type == PAWN && (rank_of(move.to) == 0 || rank_of(move.to) == 7)) {
+    board_set_piece(board, move.to, (Piece){board->turn, move.promote_to});
   }
 
   // castle rights
-  if ((start_row == 0 && start_col == 0) || (end_row == 0 && end_col == 0)) {
+  if (move.from == 0 || move.to == 0) {
     board->rights &= ~WHITE_QUEEN_SIDE;
   }
-  if ((start_row == 0 && start_col == 7) || (end_row == 0 && end_col == 7)) {
+  if (move.from == 7 || move.to == 7) {
     board->rights &= ~WHITE_KING_SIDE;
   }
-  if ((start_row == 7 && start_col == 0) || (end_row == 7 && end_col == 0)) {
+  if (move.from == 56 || move.to == 56) {
     board->rights &= ~BLACK_QUEEN_SIDE;
   }
-  if ((start_row == 7 && start_col == 7) || (end_row == 7 && end_col == 7)) {
+  if (move.from == 63 || move.to == 63) {
     board->rights &= ~BLACK_KING_SIDE;
   }
-  if ((start_row == 0 && start_col == 4) || (end_row == 0 && end_col == 4)) {
+  if (move.from == 4 || move.to == 4) {
     board->rights &= ~WHITE_BOTH_SIDES;
   }
-  if ((start_row == 7 && start_col == 4) || (end_row == 7 && end_col == 4)) {
+  if (move.from == 60 || move.to == 60) {
     board->rights &= ~BLACK_BOTH_SIDES;
   }
 
   board->turn = -board->turn;
   board->move_count++;
+}
+
+Board copy_make_move(const Board* board, Move move) {
+  Board cloned_board = *board;
+  make_move(&cloned_board, move);
+  return cloned_board;
 }

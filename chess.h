@@ -1,3 +1,6 @@
+#ifndef CHESS_H
+#define CHESS_H
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,3 +13,5 @@
 #include "move_generation.h"
 #include "chess_gui.h"
 #include "attack.h"
+
+#endif

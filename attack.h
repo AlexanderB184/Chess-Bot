@@ -13,9 +13,8 @@ int is_stalemate(const Board* board);
 
 int is_check_after_move(const Board* board, Move move);
 
-int can_be_attacked(const Board* board, int row, int col);
+int can_be_attacked(const Board* board, int from);
 
-int can_be_attacked_by(const Board* board, Piece_Colour colour, int row,
-                       int col);
+int can_be_attacked_by(const Board* board, Piece_Colour colour, int from);
 
 #endif

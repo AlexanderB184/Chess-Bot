@@ -8,4 +8,6 @@
 int is_legal_move(const Board*, Move);
 int is_psuedo_legal_move(const Board*, Move);
 
+int overflows(int index, int offset, int row_diff, int col_diff);
+
 #endif

@@ -1,29 +1,28 @@
 #include "minmax.h"
 
-#include "static_eval.h"
 
-double evaluate(const Board*, size_t);
-double static_evaluate(const Board*);
+double evaluate2(const Board*, size_t);
+double static_eval(const Board*);
 
-Move best_move(const Board* board) {
-  Move move_buffer[256];
-  Slice(Move) buffer = {move_buffer, 256};
-  Slice(Move) moves = generate_legal_moves(buffer, board);
+Move best_move_old(const Board* board) {
+  Scratch_Arena scratch = get_scratch(NULL, 0);
+  Slice(Move) moves = generate_legal_moves(scratch.arena, board);
   Move best_move = (Move){0};
   double best_eval = -100000.0f;
   for (size_t i = 0; i < moves.length; i++) {
     Move curr_move = moves.buffer[i];
     Board board_after_move = *board;
     make_move(&board_after_move, curr_move);
-    double eval = -evaluate(&board_after_move,0);
+    double eval = -evaluate2(&board_after_move,2);
     if (eval > best_eval) {
       best_eval = eval;
       best_move = curr_move;
     }
   }
+  release_scratch(scratch);
   return best_move;
 }
-/*
+
 double static_eval(const Board* board) {
   if (is_stalemate(board)) {
     if (is_check(board)) {
@@ -59,20 +58,19 @@ double static_eval(const Board* board) {
     }
   }
   return evalulation * board->turn;
-}*/
+}
 
-double evaluate(const Board* board, size_t depth) {
+double evaluate2(const Board* board, size_t depth) {
   if (depth == 0) {
-    return static_evaluation(board);  // static evaluate
+    return static_eval(board);  // static evaluate
   }
   if (board->half_move_count >= 50) {
     return -0.1f;
   }
-  
-  Move move_buffer[256];
-  Slice(Move) buffer = {move_buffer, 256};
-  Slice(Move) moves = generate_legal_moves(buffer, board);
+  Scratch_Arena scratch = get_scratch(NULL, 0);
+  Slice(Move) moves = generate_legal_moves(scratch.arena, board);
   if (moves.length == 0) {
+    release_scratch(scratch);
     if (is_check(board)) {
       return -10000.0f;
     } else {
@@ -84,10 +82,11 @@ double evaluate(const Board* board, size_t depth) {
     Move curr_move = moves.buffer[i];
     Board cloned_board = *board;
     make_move(&cloned_board, curr_move);
-    double eval = -evaluate(&cloned_board, depth - 1);
+    double eval = -evaluate2(&cloned_board, depth - 1);
     if (eval > best_eval) {
       best_eval = eval;
     }
   }
+  release_scratch(scratch);
   return best_eval;
 }

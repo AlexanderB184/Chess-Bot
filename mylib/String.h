@@ -17,7 +17,7 @@ typedef struct String {
   (String) { (cstr), sizeof(cstr) - 1 }
 
 #define from_cstr(cstr) \
-  (String) { (cstr), strlen(cstr) }
+  (String) { .buffer=(cstr), .length=strlen(cstr) }
 
 char* as_cstr(Arena* arena, String string);
 

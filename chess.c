@@ -9,15 +9,16 @@ int main(int argc, char const* argv[]) {
   
   while (!is_stalemate(&board)) {
     //display_board(stdout, &board, board.turn);
-    Move move  = rand_move(&board);//= get_legal_move(stdin, &board);
+    Move move  = best_move(&board);//= get_legal_move(stdin, &board);
     make_move(&board, move);
     if (is_stalemate(&board)) {
       break;
     }
-     move = best_move(&board);
+    //display_board(stdout, &board, board.turn);
+    move = best_move_old(&board);
     make_move(&board, move);
   }
-  display_board(stdout, &board, board.turn);
+  //display_board(stdout, &board, board.turn);
 
   Piece_Colour winner = NONE;
 

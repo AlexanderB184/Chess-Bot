@@ -1,4 +1,5 @@
 #include "Arena.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,7 +38,7 @@ Arena arenas[MAX_ARENAS];
 Arena* arena_alloc() {
   for (size_t i = 0; i < MAX_ARENAS; i++) {
     if (arenas[i].memory == NULL) {
-      arenas[i] = (Arena){malloc(0x1000), 0};
+      arenas[i] = (Arena){malloc(0x10000), 0};
       return &arenas[i];
     }
   }
@@ -51,27 +52,46 @@ void arena_release(Arena* arena) {
   free(ptr);
 }
 
+#include <stdio.h>
+
 // finds an arena which is not in conflicts, if none exist it allocates a new
 Scratch_Arena get_scratch(Arena** conflicts, size_t conflict_count) {
-  Arena* free_arena = 0;
+  /*Arena* free_arena = 0;
+  size_t emptiest_position = 0x1000000;
+  Arena* emptiest = 0;
   for (size_t i = 0; i < MAX_ARENAS; i++) {
     if (!free_arena && arenas[i].memory == NULL) {
       free_arena = &arenas[i];
     }
+    int has_conflict = 0;
     for (size_t j = 0; j < conflict_count; j++) {
-      if (&arenas[i] != conflicts[j]) {
-        return (Scratch_Arena){&arenas[i], arenas[i].position};
+      if (&arenas[i] == conflicts[j]) {
+        has_conflict = 1;
       }
     }
+    if (!has_conflict && arenas[i].position < emptiest_position) {
+      emptiest_position = arenas[i].position;
+      emptiest = &arenas[i];
+    }
   }
-  *free_arena = (Arena){malloc(0x1000), 0};
-  return (Scratch_Arena){free_arena, 0};
+  if (free_arena) {
+    *free_arena = (Arena){malloc(0x10000), 0};
+    return (Scratch_Arena){free_arena, 0};
+  } else {
+    return (Scratch_Arena){emptiest, emptiest_position};
+  }*/
+  static Arena arena = {NULL,0};
+  if (arena.memory == NULL) {
+    arena.memory = malloc(10 * 1000 * 1000);
+  }
+  //printf("%zu\n",arena.position);
+  return (Scratch_Arena){&arena, arena.position};
 }
 
 // restores scratch arena to previous state
 void release_scratch(Scratch_Arena scratch) {
   scratch.arena->position = scratch.previous_state;
-  if (scratch.previous_state == 0) {
-    arena_release(scratch.arena);
-  }
+  //if (scratch.previous_state == 0) {
+  //  arena_release(scratch.arena);
+  //}
 }

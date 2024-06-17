@@ -8,8 +8,8 @@
 
 Slice_proto(Move);
 
-Slice(Move) generate_psuedo_legal_moves(Arena* arena, const Board* board);
+Slice(Move) generate_psuedo_legal_moves(Slice(Move) buffer, const Board* board);
 
-Slice(Move) generate_legal_moves(Arena* arena, const Board* board);
+Slice(Move) generate_legal_moves(Slice(Move) buffer, const Board* board);
 
 #endif
