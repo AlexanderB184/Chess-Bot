@@ -21,12 +21,19 @@ The chess interface is for the most part final. It is unlikely the existing inte
 So far the following features have been implemented.
 
 iterative deepening
+
 negamax searching
+
 static evaluation with piece-square tables
+
 alpha-beta pruning
+
 basic move ordering (captures and promotions first, on the root node moves are ordered based on score in previous iteration)
+
 transposition table
+
 refutation moves
+
 principal variation nodes
 
 Important to note that none of the chess bot interface is final except the find_best_move function, all others should be treated as internal or private functions. Only the find_best_move function should be exposed, although currently others are exposed, a improved interface will be made at a later stage. All other functions except find_best_move may be changed or even removed and should not be used outside of the chess-bot implementation.
