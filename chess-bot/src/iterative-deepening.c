@@ -67,7 +67,7 @@ int stop() {
   return elapsed_time >= time_limit;
 }
 
-int find_best_move_iterative_deepending_test(chess_state_t* chess_state,
+int find_best_move_iterative_deepening_test(chess_state_t* chess_state,
                                              move_t* best_moves,
                                              size_t* times) {
   on_start();
