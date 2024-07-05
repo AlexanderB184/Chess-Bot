@@ -13,18 +13,18 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  fprintf(stdout, "{");
+  fprintf(stdout, "{\n");
 
   for (int i = 0; i < 12; i++) {
     fprintf(stdout, "{");
 
     for (int j = 0; j < 64; j++) {
-      fprintf(stdout, "0x%0lx,", zobrist_table[i][j]);
+      fprintf(stdout, "0x%016lx, ", zobrist_table[i][j]);
     }
-    fprintf(stdout, "},");
+    fprintf(stdout, "},\n");
   }
-  fprintf(stdout, "}\n");
+  fprintf(stdout, "};\n");
 
-  fprintf(stdout, "0x%lx\n", (uint64_t)rand() | ((uint64_t)rand() << 32));
+  fprintf(stdout, "0x%0lx\n", (uint64_t)rand() | ((uint64_t)rand() << 32));
   return 0;
 }
