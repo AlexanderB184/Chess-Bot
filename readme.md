@@ -61,3 +61,12 @@ The transposition table enforces a hard limit on the number of nodes the table c
 # Optimised for short evaluation times
 
 The transposition table architecture was chosen with the consideration that it is meant to be used in bots with short fixed evaluation times, e.g. 100ms. This means we are unlikely to search enough nodes to run out of memory so we do not need to do any sort of node pruning to remove nodes which aren't useful to preserve space.
+
+# Todo
+
+The current PGN and FEN parsing is error prone and requires rewriting to ensure it doesn't overflow the buffer. Also allowing soft failing of fen parsing to allow it to skip some sections is ideal.
+
+Need to implement an interface for move validation.
+
+Need to fully test monte-carlo tree search to ensure it is working correctly
+
