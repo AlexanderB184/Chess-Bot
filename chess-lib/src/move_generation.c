@@ -16,9 +16,11 @@ int pawn_can_double_push(const chess_state_t* chess_state, sq0x88_t from) {
          (sq0x88_to_rank07(from) == 1 && chess_state->friendly_colour == WHITE);
 }
 
-int can_capture_enpassent(sq0x88_t from, sq0x88_t enpassent_target) {
-  return sq0x88_to_rank07(from) == sq0x88_to_rank07(enpassent_target) &&
-         abs(sq0x88_to_file07(from) - sq0x88_to_file07(enpassent_target)) == 1;
+int can_capture_enpassent(const chess_state_t* chess_state, sq0x88_t from) {
+  return sq0x88_to_rank07(from + chess_state->up_increment) ==
+             sq0x88_to_rank07(enpassent_target(chess_state)) &&
+         abs(sq0x88_to_file07(from) -
+             sq0x88_to_file07(enpassent_target(chess_state))) == 1;
 }
 
 size_t generate_psuedo_legal_knight_moves(const chess_state_t* chess_state,
@@ -26,16 +28,12 @@ size_t generate_psuedo_legal_knight_moves(const chess_state_t* chess_state,
                                           sq0x88_t from) {
   for (int i = 0; i < knight_increments_count; i++) {
     sq0x88_t to = from + knight_increments_list[i];
-    if (off_the_board(to)) {
-      continue;
-    }
-    if (piece_is_friendly(chess_state, to)) {
+    if (off_the_board(to) || piece_is_friendly(chess_state, to)) {
       continue;
     }
     piece_t target_piece = piece(chess_state, to);
     move_flags_t flags = (target_piece == EMPTY) ? (QUIET_MOVE) : (CAPTURE);
-    moves[move_count++] = move(
-        from, to, flags, KNIGHT | chess_state->friendly_colour, target_piece);
+    moves[move_count++] = move(from, to, flags);
   }
   return move_count;
 }
@@ -45,17 +43,12 @@ size_t generate_psuedo_legal_king_moves(const chess_state_t* chess_state,
                                         sq0x88_t king_square) {
   for (int i = 0; i < king_increments_count; i++) {
     sq0x88_t to = king_square + king_increments_list[i];
-    if (off_the_board(to)) {
+    if (off_the_board(to) || piece_is_friendly(chess_state, to)) {
       continue;
     }
     piece_t target_piece = piece(chess_state, to);
-    if (target_piece & chess_state->friendly_colour) {
-      continue;
-    }
     move_flags_t flags = (target_piece == EMPTY) ? (QUIET_MOVE) : (CAPTURE);
-    moves[move_count++] =
-        move(king_square, to, flags, KING | chess_state->friendly_colour,
-             target_piece);
+    moves[move_count++] = move(king_square, to, flags);
   }
 
   return move_count;
@@ -64,97 +57,77 @@ size_t generate_psuedo_legal_king_moves(const chess_state_t* chess_state,
 size_t generate_castling_moves(const chess_state_t* chess_state, move_t* moves,
                                size_t move_count, sq0x88_t king_square) {
   // castling
-  if ((chess_state->friendly_colour == WHITE &&
-       (chess_state->castle_rights & WHITE_KING_SIDE)) ||
-      (chess_state->friendly_colour == BLACK &&
-       (chess_state->castle_rights & BLACK_KING_SIDE))) {
-    if (piece(chess_state, king_square + 1) == EMPTY &&
-        piece(chess_state, king_square + 2) == EMPTY) {
-      moves[move_count++] = move(king_square, king_square + 2, KING_CASTLE,
-                                 KING | chess_state->friendly_colour, EMPTY);
-    }
+  if (((chess_state->friendly_colour == WHITE &&
+        (chess_state->castle_rights & WHITE_KING_SIDE) != 0) ||
+       (chess_state->friendly_colour == BLACK &&
+        (chess_state->castle_rights & BLACK_KING_SIDE) != 0)) &&
+      piece(chess_state, king_square + 1) == EMPTY &&
+      piece(chess_state, king_square + 2) == EMPTY) {
+    moves[move_count++] = move(king_square, king_square + 2, KING_CASTLE);
   }
-  if ((chess_state->friendly_colour == WHITE &&
-       (chess_state->castle_rights & WHITE_QUEEN_SIDE)) ||
-      (chess_state->friendly_colour == BLACK &&
-       (chess_state->castle_rights & BLACK_QUEEN_SIDE))) {
-    if (piece(chess_state, king_square - 1) == EMPTY &&
-        piece(chess_state, king_square - 2) == EMPTY &&
-        piece(chess_state, king_square - 3) == EMPTY) {
-      moves[move_count++] = move(king_square, king_square - 2, QUEEN_CASTLE,
-                                 KING | chess_state->friendly_colour, EMPTY);
-    }
+  if (((chess_state->friendly_colour == WHITE &&
+        (chess_state->castle_rights & WHITE_QUEEN_SIDE) != 0) ||
+       (chess_state->friendly_colour == BLACK &&
+        (chess_state->castle_rights & BLACK_QUEEN_SIDE) != 0)) &&
+      piece(chess_state, king_square - 1) == EMPTY &&
+      piece(chess_state, king_square - 2) == EMPTY &&
+      piece(chess_state, king_square - 3) == EMPTY) {
+    moves[move_count++] = move(king_square, king_square - 2, QUEEN_CASTLE);
   }
   return move_count;
 }
 
-#include <stdio.h>
 size_t generate_psuedo_legal_pawn_moves(const chess_state_t* chess_state,
                                         move_t* moves, size_t move_count,
                                         sq0x88_t from) {
   // if is promoting
-  piece_t this_piece = PAWN | chess_state->friendly_colour;
   sq0x88_t inc = chess_state->up_increment;
   sq0x88_t to = from + inc;
   if (is_promoting(chess_state, from)) {
     if (piece(chess_state, to) == EMPTY) {
-      moves[move_count++] = move(from, to, QUEEN_PROMOTION, this_piece, EMPTY);
-      moves[move_count++] = move(from, to, ROOK_PROMOTION, this_piece, EMPTY);
-      moves[move_count++] = move(from, to, BISHOP_PROMOTION, this_piece, EMPTY);
-      moves[move_count++] = move(from, to, KNIGHT_PROMOTION, this_piece, EMPTY);
+      moves[move_count++] = move(from, to, QUEEN_PROMOTION);
+      moves[move_count++] = move(from, to, ROOK_PROMOTION);
+      moves[move_count++] = move(from, to, BISHOP_PROMOTION);
+      moves[move_count++] = move(from, to, KNIGHT_PROMOTION);
     }
     to = from + inc + 1;
     if (!off_the_board(to) && piece_is_enemy(chess_state, to)) {
-      piece_t captured_piece = piece(chess_state, to);
-      moves[move_count++] =
-          move(from, to, QUEEN_CAPTURE_PROMOTION, this_piece, captured_piece);
-      moves[move_count++] =
-          move(from, to, ROOK_CAPTURE_PROMOTION, this_piece, captured_piece);
-      moves[move_count++] =
-          move(from, to, BISHOP_CAPTURE_PROMOTION, this_piece, captured_piece);
-      moves[move_count++] =
-          move(from, to, KNIGHT_CAPTURE_PROMOTION, this_piece, captured_piece);
+      moves[move_count++] = move(from, to, QUEEN_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, to, ROOK_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, to, BISHOP_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, to, KNIGHT_CAPTURE_PROMOTION);
     }
     to = from + inc - 1;
     if (!off_the_board(to) && piece_is_enemy(chess_state, to)) {
-      piece_t captured_piece = piece(chess_state, to);
-      moves[move_count++] =
-          move(from, to, QUEEN_CAPTURE_PROMOTION, this_piece, captured_piece);
-      moves[move_count++] =
-          move(from, to, ROOK_CAPTURE_PROMOTION, this_piece, captured_piece);
-      moves[move_count++] =
-          move(from, to, BISHOP_CAPTURE_PROMOTION, this_piece, captured_piece);
-      moves[move_count++] =
-          move(from, to, KNIGHT_CAPTURE_PROMOTION, this_piece, captured_piece);
+      moves[move_count++] = move(from, to, QUEEN_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, to, ROOK_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, to, BISHOP_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, to, KNIGHT_CAPTURE_PROMOTION);
     }
     return move_count;
   }
 
   if (!off_the_board(to) && piece(chess_state, to) == EMPTY) {
-    moves[move_count++] = move(from, to, QUIET_MOVE, this_piece, EMPTY);
+    moves[move_count++] = move(from, to, QUIET_MOVE);
   }
   to = from + inc + 1;
   if (!off_the_board(to) && piece_is_enemy(chess_state, to)) {
-    moves[move_count++] =
-        move(from, to, CAPTURE, this_piece, piece(chess_state, to));
+    moves[move_count++] = move(from, to, CAPTURE);
   }
   to = from + inc - 1;
   if (!off_the_board(to) && piece_is_enemy(chess_state, to)) {
-    moves[move_count++] =
-        move(from, to, CAPTURE, this_piece, piece(chess_state, to));
+    moves[move_count++] = move(from, to, CAPTURE);
   }
   to = from + 2 * inc;
   if (!off_the_board(to) && piece(chess_state, to) == EMPTY &&
       piece(chess_state, to - inc) == EMPTY &&
       pawn_can_double_push(chess_state, from)) {
-    moves[move_count++] = move(from, to, DOUBLE_PAWN_PUSH, this_piece, EMPTY);
+    moves[move_count++] = move(from, to, DOUBLE_PAWN_PUSH);
   }
 
   if (!off_the_board(enpassent_target(chess_state)) &&
-      can_capture_enpassent(from, enpassent_target(chess_state))) {
-    moves[move_count++] =
-        move(from, enpassent_target(chess_state) + inc, ENPASSENT, this_piece,
-             PAWN | chess_state->enemy_colour);
+      can_capture_enpassent(chess_state, from)) {
+    moves[move_count++] = move(from, enpassent_target(chess_state), ENPASSENT);
   }
 
   return move_count;
@@ -165,18 +138,15 @@ size_t generate_psuedo_legal_sliding_moves(const chess_state_t* chess_state,
                                            sq0x88_t from,
                                            const sq0x88_t* increments,
                                            int increments_count) {
-  piece_t this_piece = piece(chess_state, from);
   for (sq0x88_t i = 0; i < increments_count; i++) {
     sq0x88_t inc = increments[i];
     sq0x88_t to;
-    for (to = from + inc; !off_the_board(to) && piece(chess_state, to) == EMPTY;
-         to += inc) {
-      moves[move_count++] = move(from, to, QUIET_MOVE, this_piece, EMPTY);
+    for (to = from + inc; piece(chess_state, to) == EMPTY; to += inc) {
+      moves[move_count++] = move(from, to, QUIET_MOVE);
     }
     if (off_the_board(to) || piece_is_friendly(chess_state, to)) continue;
 
-    moves[move_count++] =
-        move(from, to, CAPTURE, this_piece, piece(chess_state, to));
+    moves[move_count++] = move(from, to, CAPTURE);
   }
   return move_count;
 }
@@ -256,9 +226,7 @@ size_t generate_sliding_piece_capture(const chess_state_t* chess_state,
                                       sq0x88_t square, sq0x88_t target,
                                       sq0x88_t inc) {
   if (inc && forwards_ray_cast(chess_state, square, inc) == target) {
-    moves[move_count++] =
-        move(square, target, CAPTURE, piece(chess_state, square),
-             piece(chess_state, target));
+    moves[move_count++] = move(square, target, CAPTURE);
   }
   return move_count;
 }
@@ -268,8 +236,7 @@ size_t generate_sliding_piece_interposing_move(const chess_state_t* chess_state,
                                                sq0x88_t square, sq0x88_t target,
                                                sq0x88_t inc) {
   if (inc && backwards_ray_cast(chess_state, target, inc) == square) {
-    moves[move_count++] =
-        move(square, target, QUIET_MOVE, piece(chess_state, square), EMPTY);
+    moves[move_count++] = move(square, target, QUIET_MOVE);
   }
   return move_count;
 }
@@ -277,8 +244,6 @@ size_t generate_sliding_piece_interposing_move(const chess_state_t* chess_state,
 size_t generate_psuedo_legal_captures_of(const chess_state_t* chess_state,
                                          move_t* moves, size_t move_count,
                                          sq0x88_t target) {
-  piece_t captured_piece = piece(chess_state, target);
-
   // queen moves
   for (int p = 0; p < chess_state->friendly_pieces->queen_count; p++) {
     move_count = generate_sliding_piece_capture(
@@ -323,8 +288,7 @@ size_t generate_psuedo_legal_captures_of(const chess_state_t* chess_state,
             chess_state->friendly_pieces->knight_list[knight_index], target)) {
       moves[move_count++] =
           move(chess_state->friendly_pieces->knight_list[knight_index], target,
-               CAPTURE, KNIGHT | chess_state->friendly_colour,
-               piece(chess_state, target));
+               CAPTURE);
     }
   }
 
@@ -335,53 +299,41 @@ size_t generate_psuedo_legal_captures_of(const chess_state_t* chess_state,
   if (is_promoting(chess_state, target - inc)) {
     from = target - inc + 1;
     if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn) {
-      moves[move_count++] = move(from, target, QUEEN_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
-      moves[move_count++] = move(from, target, ROOK_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
-      moves[move_count++] = move(from, target, BISHOP_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
-      moves[move_count++] = move(from, target, KNIGHT_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
+      moves[move_count++] = move(from, target, QUEEN_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, target, ROOK_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, target, BISHOP_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, target, KNIGHT_CAPTURE_PROMOTION);
     }
     from = target - inc - 1;
     if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn) {
-      moves[move_count++] = move(from, target, QUEEN_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
-      moves[move_count++] = move(from, target, ROOK_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
-      moves[move_count++] = move(from, target, BISHOP_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
-      moves[move_count++] = move(from, target, KNIGHT_CAPTURE_PROMOTION,
-                                 friendly_pawn, captured_piece);
+      moves[move_count++] = move(from, target, QUEEN_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, target, ROOK_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, target, BISHOP_CAPTURE_PROMOTION);
+      moves[move_count++] = move(from, target, KNIGHT_CAPTURE_PROMOTION);
     }
     return move_count;
   }
 
   from = target - inc + 1;
   if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn) {
-    moves[move_count++] =
-        move(from, target, CAPTURE, friendly_pawn, captured_piece);
+    moves[move_count++] = move(from, target, CAPTURE);
   }
 
   from = target - inc - 1;
   if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn) {
-    moves[move_count++] =
-        move(from, target, CAPTURE, friendly_pawn, captured_piece);
+    moves[move_count++] = move(from, target, CAPTURE);
   }
 
-  if (enpassent_target(chess_state) == target) {
+  if (enpassent_target(chess_state) == target + chess_state->up_increment) {
     from = target + 1;
     if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn &&
-        can_capture_enpassent(from, target)) {
-      moves[move_count++] =
-          move(from, target + inc, ENPASSENT, friendly_pawn, captured_piece);
+        can_capture_enpassent(chess_state, from)) {
+      moves[move_count++] = move(from, enpassent_target(chess_state), ENPASSENT);
     }
     from = target - 1;
     if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn &&
-        can_capture_enpassent(from, target)) {
-      moves[move_count++] =
-          move(from, target + inc, ENPASSENT, friendly_pawn, captured_piece);
+        can_capture_enpassent(chess_state, from)) {
+      moves[move_count++] = move(from, enpassent_target(chess_state), ENPASSENT);
     }
   }
 
@@ -439,8 +391,7 @@ size_t generate_psuedo_legal_interposing_moves(const chess_state_t* chess_state,
             interposing_square)) {
       moves[move_count++] =
           move(chess_state->friendly_pieces->knight_list[knight_index],
-               interposing_square, QUIET_MOVE,
-               KNIGHT | chess_state->friendly_colour, EMPTY);
+               interposing_square, QUIET_MOVE);
     }
   }
 
@@ -451,17 +402,12 @@ size_t generate_psuedo_legal_interposing_moves(const chess_state_t* chess_state,
   from = interposing_square - inc;
   if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn) {
     if (is_promoting(chess_state, from)) {
-      moves[move_count++] =
-          move(from, interposing_square, QUEEN_PROMOTION, friendly_pawn, EMPTY);
-      moves[move_count++] =
-          move(from, interposing_square, ROOK_PROMOTION, friendly_pawn, EMPTY);
-      moves[move_count++] = move(from, interposing_square, BISHOP_PROMOTION,
-                                 friendly_pawn, EMPTY);
-      moves[move_count++] = move(from, interposing_square, KNIGHT_PROMOTION,
-                                 friendly_pawn, EMPTY);
+      moves[move_count++] = move(from, interposing_square, QUEEN_PROMOTION);
+      moves[move_count++] = move(from, interposing_square, ROOK_PROMOTION);
+      moves[move_count++] = move(from, interposing_square, BISHOP_PROMOTION);
+      moves[move_count++] = move(from, interposing_square, KNIGHT_PROMOTION);
     } else {
-      moves[move_count++] =
-          move(from, interposing_square, QUIET_MOVE, friendly_pawn, EMPTY);
+      moves[move_count++] = move(from, interposing_square, QUIET_MOVE);
     }
   }
 
@@ -469,8 +415,7 @@ size_t generate_psuedo_legal_interposing_moves(const chess_state_t* chess_state,
   if (!off_the_board(from) && piece(chess_state, from) == friendly_pawn &&
       piece(chess_state, interposing_square - inc) == EMPTY &&
       pawn_can_double_push(chess_state, from)) {
-    moves[move_count++] =
-        move(from, interposing_square, DOUBLE_PAWN_PUSH, friendly_pawn, EMPTY);
+    moves[move_count++] = move(from, interposing_square, DOUBLE_PAWN_PUSH);
   }
 
   return move_count;
@@ -533,6 +478,200 @@ size_t generate_moves(const chess_state_t* chess_state, move_t* moves) {
   } else {
     move_count = generate_psuedo_legal_moves(chess_state, moves);
   }
-  
+
+  return move_count;
+}
+
+size_t psuedo_legal_knight_move_count(const chess_state_t* chess_state,
+
+                                      sq0x88_t from) {
+  colour_t colour = piece(chess_state, from) & COLOUR_MASK;
+  size_t move_count = 0;
+  for (int i = 0; i < knight_increments_count; i++) {
+    sq0x88_t to = from + knight_increments_list[i];
+    if (off_the_board(to)) {
+      continue;
+    }
+    if (piece(chess_state, to) & colour) {
+      continue;
+    }
+    move_count++;
+  }
+  return move_count;
+}
+
+size_t psuedo_legal_king_move_count(const chess_state_t* chess_state,
+                                    sq0x88_t king_square) {
+  colour_t colour = piece(chess_state, king_square) & COLOUR_MASK;
+  size_t move_count = 0;
+  for (int i = 0; i < king_increments_count; i++) {
+    sq0x88_t to = king_square + king_increments_list[i];
+    if (off_the_board(to)) {
+      continue;
+    }
+    if (piece(chess_state, to) & colour) {
+      continue;
+    }
+    move_count++;
+  }
+
+  return move_count;
+}
+
+size_t castling_move_count(const chess_state_t* chess_state,
+                           sq0x88_t king_square) {
+  colour_t colour = piece(chess_state, king_square) & COLOUR_MASK;
+  size_t move_count = 0;
+  // castling
+  if ((colour == WHITE && (chess_state->castle_rights & WHITE_KING_SIDE)) ||
+      (colour == BLACK && (chess_state->castle_rights & BLACK_KING_SIDE))) {
+    if (piece(chess_state, king_square + 1) == EMPTY &&
+        piece(chess_state, king_square + 2) == EMPTY) {
+      move_count++;
+    }
+  }
+  if ((colour == WHITE && (chess_state->castle_rights & WHITE_QUEEN_SIDE)) ||
+      (colour == BLACK && (chess_state->castle_rights & BLACK_QUEEN_SIDE))) {
+    if (piece(chess_state, king_square - 1) == EMPTY &&
+        piece(chess_state, king_square - 2) == EMPTY &&
+        piece(chess_state, king_square - 3) == EMPTY) {
+      move_count++;
+    }
+  }
+  return move_count;
+}
+
+#include <stdio.h>
+size_t psuedo_legal_pawn_move_count(const chess_state_t* chess_state,
+                                    sq0x88_t from) {
+  size_t move_count = 0;
+  // if is promoting
+  sq0x88_t inc = chess_state->up_increment;
+  sq0x88_t to = from + inc;
+  if (is_promoting(chess_state, from)) {
+    if (piece(chess_state, to) == EMPTY) {
+      move_count += 4;
+    }
+    to = from + inc + 1;
+    if (!off_the_board(to) &&
+        (piece(chess_state, from) & COLOUR_MASK) ==
+            ((piece(chess_state, to) & COLOUR_MASK) ^ COLOUR_MASK)) {
+      move_count += 4;
+    }
+    to = from + inc - 1;
+    if (!off_the_board(to) &&
+        (piece(chess_state, from) & COLOUR_MASK) ==
+            ((piece(chess_state, to) & COLOUR_MASK) ^ COLOUR_MASK)) {
+      move_count += 4;
+    }
+    return move_count;
+  }
+
+  if (!off_the_board(to) && piece(chess_state, to) == EMPTY) {
+    move_count++;
+  }
+  to = from + inc + 1;
+  if (!off_the_board(to) &&
+      (piece(chess_state, from) & COLOUR_MASK) ==
+          ((piece(chess_state, to) & COLOUR_MASK) ^ COLOUR_MASK)) {
+    move_count++;
+  }
+  to = from + inc - 1;
+  if (!off_the_board(to) &&
+      (piece(chess_state, from) & COLOUR_MASK) ==
+          ((piece(chess_state, to) & COLOUR_MASK) ^ COLOUR_MASK)) {
+    move_count++;
+  }
+  to = from + 2 * inc;
+  if (!off_the_board(to) && piece(chess_state, to) == EMPTY &&
+      piece(chess_state, to - inc) == EMPTY &&
+      pawn_can_double_push(chess_state, from)) {
+    move_count++;
+  }
+
+  if (!off_the_board(enpassent_target(chess_state)) &&
+      can_capture_enpassent(chess_state, from)) {
+    move_count++;
+  }
+
+  return move_count;
+}
+
+size_t psuedo_legal_sliding_move_count(const chess_state_t* chess_state,
+                                       sq0x88_t from,
+                                       const sq0x88_t* increments,
+                                       int increments_count) {
+  size_t move_count = 0;
+  for (sq0x88_t i = 0; i < increments_count; i++) {
+    sq0x88_t inc = increments[i];
+    sq0x88_t to;
+    for (to = from + inc; !off_the_board(to) && piece(chess_state, to) == EMPTY;
+         to += inc) {
+      move_count++;
+    }
+    if ((off_the_board(to)) || ((piece(chess_state, from) & COLOUR_MASK) ==
+                                (piece(chess_state, to) & COLOUR_MASK)))
+      continue;
+
+    move_count++;
+  }
+  return move_count;
+}
+
+size_t psuedo_legal_move_count(const chess_state_t* chess_state,
+                               const piece_list_t* piece_list) {
+  size_t move_count = 0;
+
+  // king moves
+  move_count +=
+      psuedo_legal_king_move_count(chess_state, piece_list->king_square);
+
+  move_count += castling_move_count(chess_state, piece_list->king_square);
+
+  // queen moves
+  for (int queen_index = 0; queen_index < piece_list->queen_count;
+       queen_index++) {
+    move_count += psuedo_legal_sliding_move_count(
+        chess_state, piece_list->queen_list[queen_index], queen_increments_list,
+        queen_increments_count);
+  }
+  // rook moves
+  for (int rook_index = 0; rook_index < piece_list->rook_count; rook_index++) {
+    move_count += psuedo_legal_sliding_move_count(
+        chess_state, piece_list->rook_list[rook_index], rook_increments_list,
+        rook_increments_count);
+  }
+
+  // light bishop moves
+  for (int light_bishop_index = 0;
+       light_bishop_index < piece_list->light_bishop_count;
+       light_bishop_index++) {
+    move_count += psuedo_legal_sliding_move_count(
+        chess_state, piece_list->light_bishop_list[light_bishop_index],
+        bishop_increments_list, bishop_increments_count);
+  }
+
+  // dark bishop moves
+  for (int dark_bishop_index = 0;
+       dark_bishop_index < piece_list->dark_bishop_count; dark_bishop_index++) {
+    move_count += psuedo_legal_sliding_move_count(
+        chess_state, piece_list->dark_bishop_list[dark_bishop_index],
+        bishop_increments_list, bishop_increments_count);
+  }
+
+  // knight moves
+  for (int knight_index = 0;
+       knight_index < chess_state->friendly_pieces->knight_count;
+       knight_index++) {
+    sq0x88_t from = piece_list->knight_list[knight_index];
+    move_count += psuedo_legal_knight_move_count(chess_state, from);
+  }
+
+  // pawn moves
+  for (int pawn_index = 0; pawn_index < piece_list->pawn_count; pawn_index++) {
+    sq0x88_t from = piece_list->pawn_list[pawn_index];
+    move_count += psuedo_legal_pawn_move_count(chess_state, from);
+  }
+
   return move_count;
 }

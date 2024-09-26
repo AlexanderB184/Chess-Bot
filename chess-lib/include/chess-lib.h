@@ -12,5 +12,5 @@
 #include "move.h"
 #include "pawn.h"
 #include "zobrist.h"
-
+#include "notation.h"
 #endif

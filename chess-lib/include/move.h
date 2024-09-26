@@ -10,9 +10,6 @@ void make_move(chess_state_t* chess_state,move_t move);
 void unmake_move(chess_state_t* chess_state);
 
 // move constructor
-move_t move(sq8x8_t from, sq8x8_t to, uint16_t flags, piece_t moved_piece, piece_t captured_piece);
-
-move_t unordered_move(sq8x8_t from, sq8x8_t to, uint16_t flags);
-
+move_t move(sq8x8_t from, sq8x8_t to, uint16_t flags);
 
 #endif

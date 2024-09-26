@@ -137,9 +137,9 @@ typedef struct {
   sq0x88_t dark_bishop_list[MAX_BISHOPS];
   sq0x88_t rook_list[MAX_ROOKS];
   sq0x88_t queen_list[MAX_QUEENS];
-  int pawn_count, knight_count, light_bishop_count, dark_bishop_count,
+  uint8_t pawn_count, knight_count, light_bishop_count, dark_bishop_count,
       rook_count, queen_count;
-  int indices_list[64];
+  uint8_t indices_list[64];
 } piece_list_t;
 
 typedef struct move_t {
@@ -161,7 +161,6 @@ typedef struct ply_stack_item_t {
   zobrist_t zobrist;
   size_t last_irreversible;
 } ply_stack_item_t;
-
 
 typedef struct {
   // piece data

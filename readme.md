@@ -37,3 +37,27 @@ refutation moves
 principal variation nodes
 
 Important to note that none of the chess bot interface is final except the find_best_move function, all others should be treated as internal or private functions. Only the find_best_move function should be exposed, although currently others are exposed, a improved interface will be made at a later stage. All other functions except find_best_move may be changed or even removed and should not be used outside of the chess-bot implementation.
+
+## Transposition Table
+
+The transposition table is implemented using seperate chaining. It has 2 key components the item buffer which stores the nodes in a contiguous buffer, and the buckets. Each bucket is a vector storing slots. Each slot contains a key (zobrist hash of the board position) and the index of the corresponding node.
+
+# Search or Insert
+
+The transposition table uses a search or insert paradigm. At the beginning of evaluating a node, the table is searched, and if the node is not found then a new node is inserted. Either the index of the existing node or of the newly inserted node is returned. At the end of the evaluating the node, the node can be updated without researching the table. Some care is required since the index may point to a null node. To check if a node is null check its type is equal to EMPTY_NODE (0)
+
+# Index based
+
+All operations on nodes are done through the nodes index. The nodes index is its index in the item buffer. This allows indices to remain valid even if the item buffer is resized. It also allows the index to be reused later and avoid researching the table when it comes time to update the table at the end of evaluating the node.
+
+# Nodes
+
+Nodes represent a single node in the evaluation, they store the refutation, which is the best move found in the previous search of the position, the score from the previous search. The type of node, empty if the node was created in search or insert but hasn't been given an initial value yet. The age of the node, which is set as max depth so the higher the age the younger the node. the depth from the root. The depth to the leaf can also be calculate as $age - depth$.
+
+# Node limit.
+
+The transposition table enforces a hard limit on the number of nodes the table can contain, this prevents the table from using too much memory and crashing the program. Currently it is set at 10 million nodes.
+
+# Optimised for short evaluation times
+
+The transposition table architecture was chosen with the consideration that it is meant to be used in bots with short fixed evaluation times, e.g. 100ms. This means we are unlikely to search enough nodes to run out of memory so we do not need to do any sort of node pruning to remove nodes which aren't useful to preserve space.

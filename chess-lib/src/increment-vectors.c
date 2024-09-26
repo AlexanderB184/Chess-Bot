@@ -1,5 +1,6 @@
-#include "../include/chess-lib.h"
+#include <stdlib.h>
 
+#include "../include/chess-lib-inlines.h"
 #include "../include/chess-lib.h"
 #include "../include/private/chess-lib-internals.h"
 
@@ -8,15 +9,12 @@ sq0x88_t queen_increment(sq0x88_t from, sq0x88_t to) {
 }
 sq0x88_t rook_increment(sq0x88_t from, sq0x88_t to) {
   return rook_increment_vector[diff_0x88(to, from)];
-
 }
 sq0x88_t bishop_increment(sq0x88_t from, sq0x88_t to) {
   return bishop_increment_vector[diff_0x88(to, from)];
-
 }
 sq0x88_t knight_increment(sq0x88_t from, sq0x88_t to) {
   return knight_increment_vector[diff_0x88(to, from)];
-
 }
 sq0x88_t king_increment(sq0x88_t from, sq0x88_t to) {
   return king_increment_vector[diff_0x88(to, from)];

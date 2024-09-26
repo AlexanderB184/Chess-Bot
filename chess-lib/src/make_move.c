@@ -8,32 +8,23 @@
 
 void push_ply_stack(chess_state_t* chess_state, move_t move) {
   if (chess_state->ply_counter >= chess_state->ply_stack_capacity) {
-    printf("%d %d\n",chess_state->ply_counter,chess_state->ply_stack_capacity);
     chess_state->ply_stack_capacity = chess_state->ply_stack_capacity * 2;
     chess_state->ply_stack =
         realloc(chess_state->ply_stack,
                 sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
   }
-  chess_state->ply_stack[chess_state->ply_counter].move = move;
-  chess_state->ply_stack[chess_state->ply_counter].enpassent =
-      chess_state->enpassent_target;
-  chess_state->ply_stack[chess_state->ply_counter].half_move_clock =
-      chess_state->half_move_clock;
-  chess_state->ply_stack[chess_state->ply_counter].rights =
-      chess_state->castle_rights;
-  chess_state->ply_stack[chess_state->ply_counter].captured =
-      piece(chess_state, get_to(move));
-  chess_state->ply_stack[chess_state->ply_counter].zobrist =
-      chess_state->zobrist;
-  chess_state->ply_stack[chess_state->ply_counter].check_square =
-      chess_state->check_square;
-  chess_state->ply_stack[chess_state->ply_counter].n_checks =
-      chess_state->n_checks;
-  chess_state->ply_stack[chess_state->ply_counter].discovered_check =
-      chess_state->discovered_check;
-  chess_state->ply_stack[chess_state->ply_counter].last_irreversible =
-      chess_state->ply_of_last_irreversible_move;
-  chess_state->ply_counter++;
+  chess_state->ply_stack[chess_state->ply_counter++] = (ply_stack_item_t){
+      .move = move,
+      .enpassent = chess_state->enpassent_target,
+      .half_move_clock = chess_state->half_move_clock,
+      .rights = chess_state->castle_rights,
+      .captured = piece(chess_state, get_to(move)),
+      .zobrist = chess_state->zobrist,
+      .check_square = chess_state->check_square,
+      .n_checks = chess_state->n_checks,
+      .discovered_check = chess_state->discovered_check,
+      .last_irreversible = chess_state->ply_of_last_irreversible_move,
+  };
 }
 
 void update_board(chess_state_t* chess_state, move_t move) {
@@ -41,12 +32,12 @@ void update_board(chess_state_t* chess_state, move_t move) {
   sq0x88_t to = get_to(move);
 
   if (is_enpassent(move)) {
-    remove_piece(chess_state, chess_state->enpassent_target);
+    remove_piece(chess_state,
+                 chess_state->enpassent_target - chess_state->up_increment);
   } else if (is_capture(move)) {
     remove_piece(chess_state, to);
   }
 
-  // printf("%d %d %d %d\n", from, to, piece(from), board.black_to_move);
   //  move piece
   move_piece(chess_state, from, to);
 
@@ -90,7 +81,7 @@ void update_rights(chess_state_t* chess_state, move_t move) {
 
 void update_enpassent_target(chess_state_t* chess_state, move_t move) {
   if (get_flags(move) == DOUBLE_PAWN_PUSH) {
-    chess_state->enpassent_target = get_to(move);
+    chess_state->enpassent_target = get_from(move) + chess_state->up_increment;
   } else {
     chess_state->enpassent_target = 0x88;
   }
@@ -133,27 +124,17 @@ void make_move(chess_state_t* chess_state, move_t move) {
 
 // restores the board to the state before the previous move was made
 void unmake_move(chess_state_t* chess_state) {
-  --chess_state->ply_counter;
-
-  chess_state->check_square =
-      chess_state->ply_stack[chess_state->ply_counter].check_square;
-  chess_state->discovered_check =
-      chess_state->ply_stack[chess_state->ply_counter].discovered_check;
-  chess_state->n_checks =
-      chess_state->ply_stack[chess_state->ply_counter].n_checks;
-  chess_state->enpassent_target =
-      chess_state->ply_stack[chess_state->ply_counter].enpassent;
-  chess_state->castle_rights =
-      chess_state->ply_stack[chess_state->ply_counter].rights;
-  chess_state->half_move_clock =
-      chess_state->ply_stack[chess_state->ply_counter].half_move_clock;
-  //chess_state->zobrist =
-  //    chess_state->ply_stack[chess_state->ply_counter].zobrist;
-  chess_state->ply_of_last_irreversible_move =
-      chess_state->ply_stack[chess_state->ply_counter].last_irreversible;
-  move_t prev_move = chess_state->ply_stack[chess_state->ply_counter].move;
-  piece_t captured_piece =
-      chess_state->ply_stack[chess_state->ply_counter].captured;
+  ply_stack_item_t unwound_state =
+      chess_state->ply_stack[--chess_state->ply_counter];
+  chess_state->check_square = unwound_state.check_square;
+  chess_state->discovered_check = unwound_state.discovered_check;
+  chess_state->n_checks = unwound_state.n_checks;
+  chess_state->enpassent_target = unwound_state.enpassent;
+  chess_state->castle_rights = unwound_state.rights;
+  chess_state->half_move_clock = unwound_state.half_move_clock;
+  chess_state->ply_of_last_irreversible_move = unwound_state.last_irreversible;
+  move_t prev_move = unwound_state.move;
+  piece_t captured_piece = unwound_state.captured;
   update_turn(chess_state);
   sq0x88_t from = get_from(prev_move);
   sq0x88_t to = get_to(prev_move);
@@ -166,7 +147,8 @@ void unmake_move(chess_state_t* chess_state) {
   }
 
   if (is_enpassent(prev_move)) {
-    place_piece(chess_state, chess_state->enpassent_target,
+    place_piece(chess_state,
+                chess_state->enpassent_target - chess_state->up_increment,
                 chess_state->enemy_colour | PAWN);
   } else if (is_capture(prev_move)) {
     place_piece(chess_state, to, captured_piece);

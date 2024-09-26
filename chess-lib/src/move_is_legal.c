@@ -1,5 +1,5 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../include/chess-lib.h"
 #include "../include/private/chess-lib-internals.h"
@@ -8,15 +8,15 @@ int is_legal_enpassent(const chess_state_t* chess_state, move_t move) {
   sq0x88_t king_square = chess_state->friendly_pieces->king_square;
   sq0x88_t inc;
 
-  inc = bishop_increment(king_square, enpassent_target(chess_state));
-
+  inc = bishop_increment(king_square, enpassent_target(chess_state) - chess_state->up_increment);
+  sq0x88_t captured_pawn = enpassent_target(chess_state) - chess_state->up_increment;
   if (inc) {
     if (forwards_ray_cast(chess_state, king_square, inc) !=
         enpassent_target(chess_state))
       return 1;
 
     sq0x88_t pinning_square =
-        forwards_ray_cast(chess_state, enpassent_target(chess_state), inc);
+        forwards_ray_cast(chess_state, captured_pawn, inc);
 
     if (off_the_board(pinning_square) ||
         piece_is_friendly(chess_state, pinning_square))
@@ -25,7 +25,7 @@ int is_legal_enpassent(const chess_state_t* chess_state, move_t move) {
     if (piece(chess_state, pinning_square) & BISHOP) return 0;
 
   } else {
-    inc = rook_increment(king_square, enpassent_target(chess_state));
+    inc = rook_increment(king_square, captured_pawn);
 
     if (inc == 0) return 1;
 
@@ -33,7 +33,7 @@ int is_legal_enpassent(const chess_state_t* chess_state, move_t move) {
 
     sq0x88_t square = forwards_ray_cast(chess_state, king_square, inc);
 
-    if (square != enpassent_target(chess_state) && square != from) return 1;
+    if (square != captured_pawn && square != from) return 1;
 
     square = forwards_ray_cast(chess_state, square + inc, inc);
 
@@ -47,12 +47,9 @@ int is_legal_enpassent(const chess_state_t* chess_state, move_t move) {
 }
 
 void trace_ply_stack(const chess_state_t* chess_state) {
-  for (int i = 0; i < chess_state->ply_counter; i++) {
-    printf("make_move(move(%d, %d, %d));\n",
-           get_from(chess_state->ply_stack[i].move),
-           get_to(chess_state->ply_stack[i].move),
-           get_flags(chess_state->ply_stack[i].move));
-  }
+  char buffer[512];
+  write_movetext(buffer, 512, chess_state);
+  printf("%s\n", buffer);
 }
 
 // checks if pseudo legal move is legal, assumes position is not in check
@@ -60,11 +57,11 @@ int is_legal(const chess_state_t* chess_state, move_t move) {
   sq0x88_t from = get_from(move);
   sq0x88_t to = get_to(move);
 
-  if (piece(chess_state, to) & KING) {
-    trace_ply_stack(chess_state);
-    printf("can capture king\n");
-    exit(1);
-  }
+  //if (piece(chess_state, to) & KING) {
+  //  trace_ply_stack(chess_state);
+  //  printf("can capture king\n");
+  //  abort();
+  //}
   sq0x88_t inc;
   sq0x88_t king_square = chess_state->friendly_pieces->king_square;
 

@@ -57,23 +57,9 @@ int value_of_promotion(move_flags_t piece) {
 
 #define PRIORITY_MAX 0x0FFF
 
-move_t move(sq0x88_t from, sq0x88_t to, uint16_t flags, piece_t moved_piece, piece_t captured_piece) {
-  // TODO: calculate move order priority
-  uint16_t priority = MOVE_PRIORITY_QUIET_MOVE;
-  if (flags & CAPTURE) {
-    int value_delta = value_of(captured_piece) - value_of(moved_piece);
-    priority = value_delta + KING_VALUE;
-  }
-  if (flags & PROMOTION) {
-    priority = value_of_promotion(flags) - PAWN_VALUE + KING_VALUE;
-  }
-  uint16_t bitpacked = (flags & 0xF) | (priority << 4);
-  return (move_t){from, to, bitpacked};
-}
-
-move_t unordered_move(sq0x88_t from, sq0x88_t to, uint16_t flags) {
+move_t move(sq0x88_t from, sq0x88_t to, uint16_t flags) {
   return (move_t){from, to, flags & 0xF};
 }
 
-  
+
 

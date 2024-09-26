@@ -41,6 +41,13 @@ void copy_position(chess_state_t* chess_state,
       malloc(sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
   memcpy(chess_state->ply_stack, state_to_copy->ply_stack,
          sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
+  if (chess_state->black_to_move) {
+    chess_state->friendly_pieces = &chess_state->black_pieces;
+    chess_state->enemy_pieces = &chess_state->white_pieces;
+  } else {
+    chess_state->friendly_pieces = &chess_state->white_pieces;
+    chess_state->enemy_pieces = &chess_state->black_pieces;
+  }
 }
 
 piece_t parse_piece(char letter) {
@@ -120,7 +127,7 @@ int parse_row(chess_state_t* chess_state, const char* fen_string, size_t* index,
           "ERROR: failed to parse FEN string \"%s\".\n Error occurred at " \
           "byte offset "                                                   \
           "%zu\n",                                                         \
-          fen_string, index);                                              \
+          fen_string != NULL ? fen_string : "NULL", index);                \
   return NULL;
 
 #define FEN_PARSE_ASSERT(cond) \
@@ -205,9 +212,9 @@ const char* load_position(chess_state_t* chess_state, const char* fen_string) {
     FEN_PARSE_NEXT(fen_string, index);
     FEN_PARSE_ASSERT(fen_string[index] == '3' || fen_string[index] == '6');
     if (fen_string[index] == '3') {
-      chess_state->enpassent_target += (sq0x88_t)48;  // rank 4
+      chess_state->enpassent_target += (sq0x88_t)32;  // rank 3
     } else {
-      chess_state->enpassent_target += (sq0x88_t)64;  // rank 5
+      chess_state->enpassent_target += (sq0x88_t)80;  // rank 6
     }
     FEN_PARSE_NEXT(fen_string, index);
   }
@@ -237,7 +244,7 @@ const char* load_position(chess_state_t* chess_state, const char* fen_string) {
     index++;
   }
   chess_state->ply_counter =
-      full_move_counter * 2 - !chess_state->black_to_move;
+      (full_move_counter - 1) * 2 + chess_state->black_to_move;
   chess_state->ply_of_last_irreversible_move = chess_state->ply_counter;
 
   init_check(chess_state);
