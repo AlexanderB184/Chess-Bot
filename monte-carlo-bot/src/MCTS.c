@@ -57,6 +57,9 @@ struct MCTS_cursor_t* goto_parent_quick(struct MCTS_cursor_t* cursor) {
 
 double MCTS_node_weight(struct MCTS_node_t* child,
                         double weight_parent_component) {
+  if (child->end_node) {
+    return child->score + weight_parent_component / sqrt(child->traversals);
+  }
   return child->score / child->traversals +
          weight_parent_component / sqrt(child->traversals);
 }
@@ -211,6 +214,7 @@ struct MCTS_cursor_t* MCTS_backpropogate(struct MCTS_cursor_t* cursor,
   do {
     MCTS_node_t* node = MCTS_node(cursor);
     if (node->end_node) {
+      node->traversals++;
       score = 1.0f - score;
       prev_index = cursor->node_index;
       goto_parent_quick(cursor);
