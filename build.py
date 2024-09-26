@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
         all_flags = ' '.join(c_flags + optimiser_flags + additional_flags)
 
-        compile_cmd = f"{compiler} {all_flags} {all_files} -o {output_path}"
+        compile_cmd = f"{compiler} {all_files} -o {output_path} {all_flags}"
 
         print(f"running command: {compile_cmd}")
 

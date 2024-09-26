@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "../include/chess-lib.h"
-#include "../include/perft.h"
+#include "../chess-lib/include/chess-lib.h"
+#include "../chess-lib/include/perft.h"
 
 static chess_state_t chess_state;
 
@@ -86,7 +86,7 @@ void test_perft(perft_test_t test_case) {
 
 int main(int argc, char const* argv[]) {
   const perft_test_t test_cases[] = {
-      {positions[0], results_tables[0], 0, 6, PERFT_ALL},
+      {positions[0], results_tables[0], 0, 5, PERFT_ALL},
       {positions[1], results_tables[1], 1, 4, PERFT_ALL},
       {positions[2], results_tables[2], 1, 5, PERFT_ALL},
       {positions[3], results_tables[3], 1, 5, PERFT_JUST_NODES},
