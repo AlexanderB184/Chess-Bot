@@ -95,92 +95,102 @@ score_centipawn_t king_value(sq0x88_t square, piece_t colour) {
 score_centipawn_t material_score(const chess_state_t* chess_state) {
   score_centipawn_t score = 0;
   int mat_count = 0;
-  mat_count += 3 * chess_state->white_pieces.knight_count;
-  mat_count += 3 * chess_state->black_pieces.knight_count;
-  mat_count += 3 * chess_state->white_pieces.light_bishop_count;
-  mat_count += 3 * chess_state->black_pieces.light_bishop_count;
-  mat_count += 3 * chess_state->white_pieces.dark_bishop_count;
-  mat_count += 3 * chess_state->black_pieces.dark_bishop_count;
-  mat_count += 5 * chess_state->white_pieces.rook_count;
-  mat_count += 5 * chess_state->black_pieces.rook_count;
-  mat_count += 9 * chess_state->white_pieces.queen_count;
-  mat_count += 9 * chess_state->black_pieces.queen_count;
+  mat_count += knight_base_value * chess_state->white_pieces.knight_count;
+  mat_count += knight_base_value * chess_state->black_pieces.knight_count;
+  mat_count += bishop_base_value * chess_state->white_pieces.light_bishop_count;
+  mat_count += bishop_base_value * chess_state->black_pieces.light_bishop_count;
+  mat_count += bishop_base_value * chess_state->white_pieces.dark_bishop_count;
+  mat_count += bishop_base_value * chess_state->black_pieces.dark_bishop_count;
+  mat_count += rook_base_value * chess_state->white_pieces.rook_count;
+  mat_count += rook_base_value * chess_state->black_pieces.rook_count;
+  mat_count += queen_base_value * chess_state->white_pieces.queen_count;
+  mat_count += queen_base_value * chess_state->black_pieces.queen_count;
 
   {
     sq0x88_t sq = chess_state->white_pieces.king_square;
-    score += value_from_piece_square_table(mat_count, king_square_tables[0],
-                                           king_square_tables[1],
-                                           flipped_square(sq));
+    score += king_base_value + value_from_piece_square_table(
+                                   mat_count, king_square_tables[0],
+                                   king_square_tables[1], flipped_square(sq));
   }
   {
     sq0x88_t sq = chess_state->black_pieces.king_square;
-    score -= value_from_piece_square_table(mat_count, king_square_tables[0],
+    score -= king_base_value +
+             value_from_piece_square_table(mat_count, king_square_tables[0],
                                            king_square_tables[1], sq);
   }
   for (int p = 0; p < chess_state->white_pieces.pawn_count; p++) {
     sq0x88_t sq = chess_state->white_pieces.pawn_list[p];
-    score += value_from_piece_square_table(mat_count, pawn_square_tables[0],
-                                           pawn_square_tables[1],
-                                           flipped_square(sq));
+    score += pawn_base_value + value_from_piece_square_table(
+                                   mat_count, pawn_square_tables[0],
+                                   pawn_square_tables[1], flipped_square(sq));
   }
   for (int p = 0; p < chess_state->black_pieces.pawn_count; p++) {
     sq0x88_t sq = chess_state->black_pieces.pawn_list[p];
-    score -= value_from_piece_square_table(mat_count, pawn_square_tables[0],
+    score -= pawn_base_value +
+             value_from_piece_square_table(mat_count, pawn_square_tables[0],
                                            pawn_square_tables[1], sq);
   }
   for (int p = 0; p < chess_state->white_pieces.knight_count; p++) {
     sq0x88_t sq = chess_state->white_pieces.knight_list[p];
-    score += value_from_piece_square_table(mat_count, knight_square_tables[0],
+    score += knight_base_value +
+             value_from_piece_square_table(mat_count, knight_square_tables[0],
                                            knight_square_tables[1],
                                            flipped_square(sq));
   }
   for (int p = 0; p < chess_state->black_pieces.knight_count; p++) {
     sq0x88_t sq = chess_state->black_pieces.knight_list[p];
-    score -= value_from_piece_square_table(mat_count, knight_square_tables[0],
+    score -= knight_base_value +
+             value_from_piece_square_table(mat_count, knight_square_tables[0],
                                            knight_square_tables[1], sq);
   }
   for (int p = 0; p < chess_state->white_pieces.light_bishop_count; p++) {
     sq0x88_t sq = chess_state->white_pieces.light_bishop_list[p];
-    score += value_from_piece_square_table(mat_count, bishop_square_tables[0],
+    score += bishop_base_value +
+             value_from_piece_square_table(mat_count, bishop_square_tables[0],
                                            bishop_square_tables[1],
                                            flipped_square(sq));
   }
   for (int p = 0; p < chess_state->black_pieces.light_bishop_count; p++) {
     sq0x88_t sq = chess_state->black_pieces.light_bishop_list[p];
-    score -= value_from_piece_square_table(mat_count, bishop_square_tables[0],
+    score -= bishop_base_value +
+             value_from_piece_square_table(mat_count, bishop_square_tables[0],
                                            bishop_square_tables[1], sq);
   }
   for (int p = 0; p < chess_state->white_pieces.dark_bishop_count; p++) {
     sq0x88_t sq = chess_state->white_pieces.dark_bishop_list[p];
-    score += value_from_piece_square_table(mat_count, bishop_square_tables[0],
+    score += bishop_base_value +
+             value_from_piece_square_table(mat_count, bishop_square_tables[0],
                                            bishop_square_tables[1],
                                            flipped_square(sq));
   }
   for (int p = 0; p < chess_state->black_pieces.dark_bishop_count; p++) {
     sq0x88_t sq = chess_state->black_pieces.dark_bishop_list[p];
-    score -= value_from_piece_square_table(mat_count, bishop_square_tables[0],
+    score -= bishop_base_value +
+             value_from_piece_square_table(mat_count, bishop_square_tables[0],
                                            bishop_square_tables[1], sq);
   }
   for (int p = 0; p < chess_state->white_pieces.rook_count; p++) {
     sq0x88_t sq = chess_state->white_pieces.rook_list[p];
-    score += value_from_piece_square_table(mat_count, rook_square_tables[0],
-                                           rook_square_tables[1],
-                                           flipped_square(sq));
+    score += rook_base_value + value_from_piece_square_table(
+                                   mat_count, rook_square_tables[0],
+                                   rook_square_tables[1], flipped_square(sq));
   }
   for (int p = 0; p < chess_state->black_pieces.rook_count; p++) {
     sq0x88_t sq = chess_state->black_pieces.rook_list[p];
-    score -= value_from_piece_square_table(mat_count, rook_square_tables[0],
+    score -= rook_base_value +
+             value_from_piece_square_table(mat_count, rook_square_tables[0],
                                            rook_square_tables[1], sq);
   }
   for (int p = 0; p < chess_state->white_pieces.queen_count; p++) {
     sq0x88_t sq = chess_state->white_pieces.queen_list[p];
-    score += value_from_piece_square_table(mat_count, queen_square_tables[0],
-                                           queen_square_tables[1],
-                                           flipped_square(sq));
+    score += queen_base_value + value_from_piece_square_table(
+                                    mat_count, queen_square_tables[0],
+                                    queen_square_tables[1], flipped_square(sq));
   }
   for (int p = 0; p < chess_state->black_pieces.queen_count; p++) {
     sq0x88_t sq = chess_state->black_pieces.queen_list[p];
-    score -= value_from_piece_square_table(mat_count, queen_square_tables[0],
+    score -= queen_base_value +
+             value_from_piece_square_table(mat_count, queen_square_tables[0],
                                            queen_square_tables[1], sq);
   }
 

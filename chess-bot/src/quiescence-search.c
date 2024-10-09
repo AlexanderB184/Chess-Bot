@@ -3,13 +3,13 @@
 #include "../include/debug.h"
 #include "../include/move-order.h"
 #include "../include/static-evaluation.h"
-#include "../include/transpo-table.h"
+#include "../include/super-simple-transposition-table.h"
 
 debug_info_t debug_info;
 
 table_t transpo_table;
 
-int transposition_cutoff_policy(node_t node, score_centipawn_t alpha,
+int transposition_cutoff_policy(node_t* node, score_centipawn_t alpha,
                                 score_centipawn_t beta, int depth,
                                 int max_depth);
 
@@ -26,12 +26,9 @@ score_centipawn_t check_extension_search(chess_state_t* chess_state,
 
   move_t hash_move = null_move;
 
-  node_index_t index =
-      search_or_insert_table(&transpo_table, chess_state->zobrist);
+  node_t* node = get_node(&transpo_table, chess_state->zobrist);
 
-  node_t node = get_node(&transpo_table, index);
-
-  if (!is_null_node(node)) {
+  if (node != NULL) {
     if (transposition_cutoff_policy(node, alpha, beta, depth, max_depth)) {
       DEBUG_INC_TRANSPO_CUTOFFS();
       return node_get_score(node);
@@ -56,8 +53,8 @@ score_centipawn_t check_extension_search(chess_state_t* chess_state,
 
   if (best_score >= beta) {
     DEBUG_INC_BETA_CUTOFFS();
-    node_t new_node = make_node(move, best_score, CUT_NODE, max_depth, depth);
-    update_table(&transpo_table, index, chess_state->zobrist, new_node);
+    set_node(&transpo_table, chess_state->zobrist, move, best_score,
+             TTNODE_LOWER, depth, max_depth);
     return best_score;
   }
 
@@ -73,8 +70,8 @@ score_centipawn_t check_extension_search(chess_state_t* chess_state,
 
     if (score >= beta) {
       DEBUG_INC_BETA_CUTOFFS();
-      node_t new_node = make_node(move, score, CUT_NODE, max_depth, depth);
-      update_table(&transpo_table, index, chess_state->zobrist, new_node);
+      set_node(&transpo_table, chess_state->zobrist, move, score, TTNODE_LOWER,
+               depth, max_depth);
       return score;
     }
     if (score > best_score) {
@@ -85,9 +82,12 @@ score_centipawn_t check_extension_search(chess_state_t* chess_state,
       }
     }
   }
-  node_t new_node =
-      make_node(best_move, best_score, ALL_NODE, max_depth, depth);
-  update_table(&transpo_table, index, chess_state->zobrist, new_node);
+
+  int node_type = best_score <= alpha ? TTNODE_UPPER : TTNODE_EXACT;
+
+  set_node(&transpo_table, chess_state->zobrist, best_move, best_score,
+           node_type, depth, max_depth);
+
   return best_score;
 }
 
@@ -101,6 +101,7 @@ score_centipawn_t quiescence_search(chess_state_t* chess_state,
   if (is_draw(chess_state)) {
     return DRAW_SCORE_CENTIPAWNS;
   }
+
 
   if (is_check(chess_state)) {
     return check_extension_search(chess_state, alpha, beta, depth, max_depth);
@@ -128,12 +129,9 @@ score_centipawn_t quiescence_search(chess_state_t* chess_state,
 
   move_t hash_move = null_move;
 
-  node_index_t index =
-      search_or_insert_table(&transpo_table, chess_state->zobrist);
+  node_t* node = get_node(&transpo_table, chess_state->zobrist);
 
-  node_t node = get_node(&transpo_table, index);
-
-  if (!is_null_node(node)) {
+  if (node != NULL) {
     if (transposition_cutoff_policy(node, alpha, beta, depth, max_depth)) {
       DEBUG_INC_TRANSPO_CUTOFFS();
       return node_get_score(node);
@@ -178,8 +176,8 @@ score_centipawn_t quiescence_search(chess_state_t* chess_state,
 
     if (score >= beta) {
       DEBUG_INC_BETA_CUTOFFS();
-      node_t new_node = make_node(move, score, CUT_NODE, max_depth, depth);
-      update_table(&transpo_table, index, chess_state->zobrist, new_node);
+      set_node(&transpo_table, chess_state->zobrist, move, best_score,
+               TTNODE_LOWER, depth, max_depth);
       return score;
     }
 
@@ -197,8 +195,7 @@ score_centipawn_t quiescence_search(chess_state_t* chess_state,
   //    ...
   // }
 
-  node_t new_node =
-      make_node(best_move, best_score, CUT_NODE, max_depth, depth);
-  update_table(&transpo_table, index, chess_state->zobrist, new_node);
+  set_node(&transpo_table, chess_state->zobrist, best_move, best_score,
+           TTNODE_UPPER, depth, max_depth);
   return best_score;
 }

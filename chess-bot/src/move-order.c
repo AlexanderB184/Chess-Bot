@@ -17,7 +17,8 @@
 // priority without sub ordering, TODO add subordering to order within the
 // categories
 
-butterfly_board_t history_heuristic;
+uint8_t history_heuristic[64 * 64];
+uint8_t butterfly_heuristic[64 * 64];
 
 uint8_t piece_value_heuristic(piece_t piece) {
   switch (piece & PIECE_MASK) {
@@ -113,7 +114,12 @@ int calculate_priority(const chess_state_t* chess_state, move_t move,
   // if (is_killer_move(move)) {
   //   return KILLER_MOVE;
   // }
-  return PRIORITY_QUIET_MOVE;// + get_butterfly_board(&history_heuristic, move);
+  int relative_butterfly_heuristic =
+      get_butterfly_board(butterfly_heuristic, move) == 0
+          ? 0
+          : (0x100 * get_butterfly_board(history_heuristic, move)) /
+                get_butterfly_board(butterfly_heuristic, move);
+  return PRIORITY_QUIET_MOVE + relative_butterfly_heuristic;
 }
 
 move_t set_priority(move_t move, int priority) {
@@ -124,8 +130,8 @@ move_t set_priority(move_t move, int priority) {
 void generate_priorities(const chess_state_t* chess_state, move_t* moves,
                          size_t move_count, move_t hash_move) {
   for (size_t i = 0; i < move_count; i++) {
-    moves[i] = set_priority(moves[i],
-                            calculate_priority(chess_state, moves[i], hash_move));
+    moves[i] = set_priority(
+        moves[i], calculate_priority(chess_state, moves[i], hash_move));
   }
 }
 

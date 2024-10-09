@@ -28,7 +28,7 @@ extern debug_info_t debug_info;
 #define DEBUG_SET_MAX_DEPTH_REACHED(MAX_DEPTH) debug_info.max_depth_reached = (MAX_DEPTH);
 #define DEBUG_SET_POSSIBLE_MOVES(MOVE_COUNT) debug_info.possible_moves = (MOVE_COUNT);
 #define DEBUG_SET_MOVES_EVALUATED_FINAL_ITER(MOVES_EVALUATED) debug_info.moves_evaluated_in_final_iteration = (MOVES_EVALUATED);
-#define DEBUG_SET_UNIQUE_NODES_SEARCHED(UNIQUE_NODES_SEARCHED) debug_info.unique_nodes_searched = (UNIQUE_NODES_SEARCHED);
+//#define DEBUG_SET_UNIQUE_NODES_SEARCHED(UNIQUE_NODES_SEARCHED) debug_info.unique_nodes_searched = (UNIQUE_NODES_SEARCHED);
 #define DEBUG_SET_TOTAL_NODES_SEARCHED(TOTAL_NODES_SEARCHED) debug_info.total_nodes_searched = (TOTAL_NODES_SEARCHED);
 #define DEBUG_INC_TOTAL_NODES_SEARCHED() debug_info.total_nodes_searched++;
 #define DEBUG_SET_TIME_ELAPSED(TIME_ELAPSED) debug_info.time_elapsed_ms = (TIME_ELAPSED);
@@ -44,7 +44,7 @@ extern debug_info_t debug_info;
 #define DEBUG_SET_POSSIBLE_MOVES(_)
 #define DEBUG_SET_MAX_DEPTH_REACHED(_)
 #define DEBUG_SET_MOVES_EVALUATED_FINAL_ITER(_)
-#define DEBUG_SET_UNIQUE_NODES_SEARCHED(_)
+//#define DEBUG_SET_UNIQUE_NODES_SEARCHED(_)
 #define DEBUG_SET_TOTAL_NODES_SEARCHED(_)
 #define DEBUG_INC_TOTAL_NODES_SEARCHED()
 #define DEBUG_SET_TIME_ELAPSED(_)

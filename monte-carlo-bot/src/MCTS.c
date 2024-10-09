@@ -6,12 +6,14 @@
 #include <string.h>
 
 #include "../../chess-lib/include/chess-lib.h"
+#include "../include/fast_rand.h"
+#include "../include/fast_sqrt.h"
 #include "../include/quiescence-search.h"
 #include "../include/static-evaluation.h"
 
 double uniform(double min, double max) {
-  double scale = rand() / (double)RAND_MAX; /* [0, 1.0] */
-  return min + scale * (max - min);         /* [min, max] */
+  double scale = fast_rand() / (double)0x7FFF; /* [0, 1.0] */
+  return min + scale * (max - min);            /* [min, max] */
 }
 
 struct MCTS_node_t* MCTS_node(struct MCTS_cursor_t* cursor) {
@@ -57,9 +59,6 @@ struct MCTS_cursor_t* goto_parent_quick(struct MCTS_cursor_t* cursor) {
 
 double MCTS_node_weight(struct MCTS_node_t* child,
                         double weight_parent_component) {
-  if (child->end_node) {
-    return child->score + weight_parent_component / sqrt(child->traversals);
-  }
   return child->score / child->traversals +
          weight_parent_component / sqrt(child->traversals);
 }
@@ -93,27 +92,40 @@ void MCTS_release_cursor(struct MCTS_cursor_t* cursor) {
 
 struct MCTS_cursor_t* MCTS_select(struct MCTS_cursor_t* cursor) {
   struct MCTS_node_t* node = MCTS_node(cursor);
-
   while (node->children_count > 0 &&
          node->children_count == node->traversed_children) {
     struct MCTS_node_t* children = MCTS_children(cursor);
     double weight_parent_component = sqrt(2 * log(node->traversals));
 
-    double total_weight;
+    double total_weight = 0;
+    int selected_node_index = 0;
+    /*
+    double weights[256];
+
+    for (uint32_t i = 0; i < node->children_count; i++) {
+      MCTS_node_t* child = &children[i];
+      total_weight += MCTS_node_weight(child, weight_parent_component);
+      weights[i] = total_weight;
+    }
+
+    double r = uniform(0, total_weight);
+
+    for (uint32_t i = 0; i < node->children_count; i++) {
+      if (r < weights[i]) {
+        selected_node_index = i;
+        break;
+      }
+    }*/
 
     total_weight = MCTS_node_weight(children, weight_parent_component);
-
-    uint32_t selected_node_index = 0;
-
     for (uint32_t i = 1; i < node->children_count; i++) {
       MCTS_node_t* child = &children[i];
-      double weight = MCTS_node_weight(child, weight_parent_component);
-
-      double r = uniform(0, total_weight + weight);
+      double w = MCTS_node_weight(child, weight_parent_component);
+      double r = uniform(0, total_weight + w);
       if (r > total_weight) {
         selected_node_index = i;
-        total_weight += weight;
       }
+      total_weight += w;
     }
 
     goto_child(cursor, selected_node_index);
@@ -198,12 +210,12 @@ float MCTS_simulate(struct MCTS_cursor_t* cursor) {
   struct MCTS_node_t* node = MCTS_node(cursor);
 
   if (node->end_node) {
-    return node->score;
+    return node->score / node->traversals;
   }
   chess_state_t* game = cursor->board_position;
   score_centipawn_t centipawn_score =
-      -quiescence_search(game, MIN_SCORE, MAX_SCORE, 0, 0);
-  float win_chance = 1 / (1 + pow(10, centipawn_score / 400));
+      quiescence_search(game, MIN_SCORE, MAX_SCORE, 0, 0);
+  float win_chance = 1 / (1 + pow(10, (float)centipawn_score / 400));
 
   return win_chance;
 }
@@ -213,13 +225,6 @@ struct MCTS_cursor_t* MCTS_backpropogate(struct MCTS_cursor_t* cursor,
   uint32_t prev_index;
   do {
     MCTS_node_t* node = MCTS_node(cursor);
-    if (node->end_node) {
-      node->traversals++;
-      score = 1.0f - score;
-      prev_index = cursor->node_index;
-      goto_parent_quick(cursor);
-      continue;
-    }
 
     node->traversals++;
 
@@ -240,7 +245,7 @@ int MCTS_run(struct MCTS_tree_t* tree) {
   MCTS_select(&cursor);
   MCTS_expand(&cursor);
 
-  int32_t score = MCTS_simulate(&cursor);
+  float score = MCTS_simulate(&cursor);
   MCTS_backpropogate(&cursor, score);
   MCTS_release_cursor(&cursor);
 

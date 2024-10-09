@@ -7,11 +7,12 @@
 #include "../include/debug.h"
 #include "../include/move-order.h"
 #include "../include/quiescence-search.h"
-#include "../include/transpo-table.h"
+#include "../include/super-simple-transposition-table.h"
 
 table_t transpo_table;
 
-butterfly_board_t history_heuristic;
+uint8_t history_heuristic[64 * 64];
+uint8_t butterfly_heuristic[64 * 64];
 
 debug_info_t debug_info;
 
@@ -26,13 +27,14 @@ size_t time_limit = 100;
 int on_start() {
   DEBUG_CLEAR();
   clock_gettime(CLOCK_MONOTONIC, &start_time);
-  make_table(&transpo_table, 10000, 3000);
-  clear_butterfly_board(&history_heuristic);
+  make_table(&transpo_table, 10000, TT_ALWAYS_REPLACE);
+  clear_butterfly_board(history_heuristic);
+  clear_butterfly_board(butterfly_heuristic);
   return 0;
 }
 
 int on_stop() {
-  DEBUG_SET_UNIQUE_NODES_SEARCHED(transpo_table.item_count)
+  // DEBUG_SET_UNIQUE_NODES_SEARCHED(transpo_table.item_count)
   release_table(&transpo_table);
 
   struct timespec current_time;
@@ -149,16 +151,16 @@ score_centipawn_t evaluate_move(chess_state_t* chess_state, move_t move,
   return score;
 }
 
-int transposition_cutoff_policy(node_t node, score_centipawn_t alpha,
+int transposition_cutoff_policy(node_t* node, score_centipawn_t alpha,
                                 score_centipawn_t beta, int depth,
                                 int max_depth) {
   int node_type = node_get_type(node);
   score_centipawn_t node_score = node_get_score(node);
 
   return (node_get_depth_searched(node) >= max_depth - depth) &&
-         ((node_type == CUT_NODE && node_score >= beta) ||
-          (node_type == ALL_NODE && node_score <= alpha) ||
-          node_type == PV_NODE);
+         ((node_type == TTNODE_LOWER && node_score >= beta) ||
+          (node_type == TTNODE_UPPER && node_score <= alpha) ||
+          node_type == TTNODE_EXACT);
 }
 
 size_t generate_moves_with_priorities(const chess_state_t* chess_state,
@@ -166,6 +168,17 @@ size_t generate_moves_with_priorities(const chess_state_t* chess_state,
   size_t move_count = generate_moves(chess_state, moves);
   generate_priorities(chess_state, moves, move_count, hash_move);
   return move_count;
+}
+
+int is_onefold_repeition_since_root(const chess_state_t* chess_state,
+                                    int depth) {
+  for (int i = 1; i < depth; i++) {
+    if (chess_state->ply_stack[chess_state->ply_counter - i - 1].zobrist ==
+        chess_state->zobrist) {
+      return 1;
+    }
+  }
+  return 0;
 }
 
 score_centipawn_t negamax(chess_state_t* chess_state, score_centipawn_t alpha,
@@ -179,14 +192,16 @@ score_centipawn_t negamax(chess_state_t* chess_state, score_centipawn_t alpha,
     return DRAW_SCORE_CENTIPAWNS;
   }
 
+  // repetitions since root are assigned to be drawn
+  // if (is_onefold_repeition_since_root(chess_state, depth)) {
+  //  return DRAW_SCORE_CENTIPAWNS;
+  //}
+
   move_t hash_move = null_move;
 
-  node_index_t index =
-      search_or_insert_table(&transpo_table, chess_state->zobrist);
+  node_t* node = get_node(&transpo_table, chess_state->zobrist);
 
-  node_t node = get_node(&transpo_table, index);
-
-  if (!is_null_node(node)) {
+  if (node != NULL) {
     if (transposition_cutoff_policy(node, alpha, beta, depth, max_depth)) {
       DEBUG_INC_TRANSPO_CUTOFFS();
       return node_get_score(node);
@@ -217,12 +232,16 @@ score_centipawn_t negamax(chess_state_t* chess_state, score_centipawn_t alpha,
       return best_score;
     }
 
+    if (!is_capture(move)) {
+      inc_butterfly_board(butterfly_heuristic, move);
+    }
+
     if (score >= beta) {
       DEBUG_INC_BETA_CUTOFFS();
-      node_t new_node = make_node(move, best_score, CUT_NODE, max_depth, depth);
-      update_table(&transpo_table, index, chess_state->zobrist, new_node);
+      set_node(&transpo_table, chess_state->zobrist, move, score, TTNODE_LOWER,
+               depth, max_depth);
       if (!is_capture(move)) {
-        inc_butterfly_board(&history_heuristic, move);
+        inc_butterfly_board(history_heuristic, move);
       }
       return score;
     }
@@ -238,12 +257,10 @@ score_centipawn_t negamax(chess_state_t* chess_state, score_centipawn_t alpha,
 
   } while (!is_null_move(move = next_move(chess_state, moves, &move_count)));
 
-  int node_type = best_score <= alpha ? ALL_NODE : PV_NODE;
+  int node_type = best_score <= alpha ? TTNODE_UPPER : TTNODE_EXACT;
 
-  node_t new_node =
-      make_node(best_move, best_score, node_type, max_depth, depth);
-
-  update_table(&transpo_table, index, chess_state->zobrist, new_node);
+  set_node(&transpo_table, chess_state->zobrist, best_move, best_score,
+           node_type, depth, max_depth);
 
   return best_score;
 }
