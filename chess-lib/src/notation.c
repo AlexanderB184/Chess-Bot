@@ -164,10 +164,11 @@ move_t read_algebraic_notation(const char* buffer, size_t buffer_size,
   if (buffer[index] >= '1' && buffer[index] <= '8') {
     rank = buffer[index++] - '1';
   }
-  if (buffer[index++] == 'x') {
+  if (buffer[index] == 'x') {
     capture = 1;
+    index++;
   }
-  if (buffer[index++] >= 'a' && buffer[index++] <= 'h') {
+  if (buffer[index] >= 'a' && buffer[index] <= 'h') {
     to = read_square(buffer + index, buffer_size);
     index += 2;
   } else {

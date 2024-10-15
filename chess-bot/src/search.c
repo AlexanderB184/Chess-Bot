@@ -1,5 +1,6 @@
 #include "../include/search.h"
 #include "../include/eval.h"
+#include "../include/bot.h"
 
 int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int depth) {
   // aliasing thread data
@@ -27,7 +28,7 @@ int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int dep
     alpha = score;
   }
 
-  for (size_t i = 1; !thread_terminate(thread) && i < move_count; i++) {
+  for (size_t i = 1; !thread_terminated(thread) && i < move_count; i++) {
     make_move(position, moves[i]);
     score = -abSearch(thread, -beta, -alpha, depth - 1);
     unmake_move(position);
@@ -74,7 +75,7 @@ score_cp_t abSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, in
   move_t best_move = moves[0];
 
   make_move(position, best_move);
-  score_cp_t best_score = -abSearch(position, -beta, -alpha, depth - 1);
+  score_cp_t best_score = -abSearch(thread, -beta, -alpha, depth - 1);
   unmake_move(position);
 
   if (best_score > alpha) {
@@ -84,9 +85,9 @@ score_cp_t abSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, in
     alpha = best_score;
   }
 
-  for (size_t i = 1; !thread_terminate(thread) && i < move_count; i++) {
+  for (size_t i = 1; !thread_terminated(thread) && i < move_count; i++) {
     make_move(position, moves[i]);
-    score_cp_t score = -abSearch(position, -beta, -alpha, depth - 1);
+    score_cp_t score = -abSearch(thread, -beta, -alpha, depth - 1);
     unmake_move(position);
 
     if (score >= beta) {
