@@ -14,7 +14,7 @@ int thread_terminated(thread_data_t* thread);
 int bot_init(bot_t* bot, bot_settings_t* settings);
 
 // loads a position into the bot's internal state
-int bot_load_position(bot_t* bot, char* fen, char* movetext);
+int bot_load_position(bot_t* bot, char* position_text);
 
 // plays a move in the current position
 int bot_update_position(bot_t* bot, char* movetext);
@@ -43,5 +43,18 @@ int bot_wait(bot_t* bot);
 int bot_is_running(bot_t* bot);
 
 int bot_save_stats(bot_t* bot, FILE* stream);
+
+#define START_LOG(BOT) fprintf((BOT)->log_stream, "info")
+#define LOG_DEPTH(BOT) fprintf((BOT)->log_stream, " depth %zu", (BOT)->threads[0]->depth_searched)
+#define LOG_NODES(BOT) fprintf((BOT)->log_stream, " nodes %zu", (BOT)->nodes_searched)
+#define LOG_TIME(BOT) fprintf((BOT)->log_stream, " time %zu", (BOT)->duration_ms)
+#define END_LOG(BOT) fprintf((BOT)->log_stream, "\n")
+
+#define SUBMIT_BEST_MOVE(BOT)                                 \
+  {                                                           \
+    char move_buffer[16];                                     \
+    bot_move((BOT), move_buffer, sizeof(move_buffer));        \
+    fprintf((BOT)->log_stream, "bestmove %s\n", move_buffer); \
+  }
 
 #endif

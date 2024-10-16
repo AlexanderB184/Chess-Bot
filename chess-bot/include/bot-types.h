@@ -26,6 +26,8 @@ typedef struct _stop_cond {
 
 typedef struct _settings {
   int nthreads;
+  FILE* log_stream;
+  FILE* err_stream;
 } bot_settings_t;
 
 typedef struct _root {
@@ -45,6 +47,9 @@ typedef struct bot_t {
   struct timespec start_time;
   atomic_uintmax_t duration_ms;
   atomic_uintmax_t nodes_searched;
+
+  FILE* log_stream;
+  FILE* err_stream;
 } bot_t;
 
 typedef struct thread_data_t {
