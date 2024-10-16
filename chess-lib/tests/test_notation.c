@@ -26,7 +26,7 @@ void make_random_str(char* buffer, int max_size) {
 int test1() {
     char buffer[1028];
     chess_state_t chess_state = {0};
-    load_position(&chess_state, "r1bq1rk1/ppp2p1p/3p2nQ/4P2P/3b4/3B1N2/PP3PP1/RN3RK1 w - -");
+    load_position(&chess_state, "8/3N1N2/8/8/6k1/3N4/8/K7 w - - 0 1");
     for (int i = 0; i < 1; i++) {
         make_random_str(buffer, 8);
         move_t Move;
@@ -46,7 +46,7 @@ int test1() {
 int test2() {
     char buffer[1028];
     chess_state_t chess_state = {0};
-    load_start_position(&chess_state);
+    load_position(&chess_state, "8/3N1N2/8/8/6k1/3N1N2/8/K7 w - - 0 1");
     move_t moves[256];
     size_t move_count = generate_legal_moves(&chess_state, moves);
     for (int i = 0; i < move_count; i++) {
@@ -57,6 +57,7 @@ int test2() {
             printf("couldn't write \'%s\' in algebraic notation\n", out);
             continue;
         }
+        printf("%s\n", out);
         move_t Move;
         outv = read_algebraic_notation(out, sizeof(buffer), &chess_state, &Move);
         if (outv == -1) {
@@ -70,6 +71,42 @@ int test2() {
     return 0;
 }
 
+void test3(chess_state_t* chess_state, int depth) {
+    if (depth <= 0) return;
+    move_t moves[256];
+    size_t move_count = generate_legal_moves(chess_state, moves);
+    for (int i = 0; i < move_count; i++) {
+        char out[1028];
+        int outv = write_algebraic_notation(out, sizeof(out), chess_state, moves[i]);
+        if (outv == -1) {
+            outv = write_long_algebraic_notation(out, sizeof(out), moves[i]);
+            printf("couldn't write \'%s\' in algebraic notation\n", out);
+            exit(1);
+        }
+        //printf("%s\n", out);
+        move_t Move;
+        outv = read_algebraic_notation(out, sizeof(out), chess_state, &Move);
+        if (outv == -1) {
+            char m[1028];
+            write_movetext_debug(m, sizeof(m), chess_state);
+            printf("%s\n",m);
+            printf("error, couldn't read what it could write: \'%s\'\n", out);
+            exit(1);
+        } else {
+            if (!compare_moves(moves[i], Move)) {
+                printf("read move different from initial move\n");
+                exit(1);
+            }
+        }
+        make_move(chess_state, Move);
+        test3(chess_state, depth - 1);
+        unmake_move(chess_state);
+    }
+
+}
+
 int main() {
-    test1();
+    chess_state_t chess_state = {0};
+    load_position(&chess_state, "K7/5R2/2R5/7R/p1p3R1/4k1p1/1P1ppp1P/1R2B3 w - - 0 1");
+    test3(&chess_state, 6);
 }

@@ -7,7 +7,7 @@ bot_t bot;
 int main() {
     int ret;
     bot_init(&bot, NULL);
-    char* start_position = "3Rb3/1p2P1k1/p4np1/1n6/8/8/5PPP/6K1 b - - 3 35";
+    char* start_position = "r1bq1rk1/pppp1ppp/1bn4B/4P3/2BP4/5N1P/PP3PP1/RN1Q1RK1 b - - 0 10";
     bot_term_cond_t stop_cond = {.depth_limit_ply = 0, .node_limit_nds = 0, .time_limit_ms = 100};
     bot_load_position(&bot, start_position, "");
     for (int i = 0; i < 100; i++) {

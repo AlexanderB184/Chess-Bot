@@ -99,11 +99,14 @@ void disambiguate_piece(chess_state_t* chess_state, sq0x88_t from, sq0x88_t to,
   for (int i = 0; i < piece_count; i++) {
     sq0x88_t sq = piece_list[i];
     if (sq == from) continue;
-    int inc = increment_func(sq, to);
-    if (inc && backwards_ray_cast(chess_state, to, inc) == from &&
+    sq0x88_t inc = increment_func(sq, to);
+    if (inc && backwards_ray_cast(chess_state, to, inc) == sq &&
         is_legal(chess_state, move(sq, to, QUIET_MOVE))) {
+      
       if (sq0x88_to_file07(from) == sq0x88_to_file07(sq)) *disambiguate_rank = 1;
-      if (sq0x88_to_rank07(from) == sq0x88_to_rank07(sq)) *disambiguate_file = 1;
+      else if (sq0x88_to_rank07(from) == sq0x88_to_rank07(sq)) *disambiguate_file = 1;
+      else if (*disambiguate_file != 0)  *disambiguate_rank = 1;
+      else  *disambiguate_file = 1;
     }
   }
 }
@@ -115,7 +118,9 @@ void disambiguate_knight(chess_state_t* chess_state, sq0x88_t from, sq0x88_t to,
     if (knight_square == from) continue;
     if (knight_increment(knight_square, to) != 0 && is_legal(chess_state, move(knight_square, to, QUIET_MOVE))) {
       if (sq0x88_to_file07(from) == sq0x88_to_file07(knight_square)) *disambiguate_rank = 1;
-      if (sq0x88_to_rank07(from) == sq0x88_to_rank07(knight_square)) *disambiguate_file = 1;
+      else if (sq0x88_to_rank07(from) == sq0x88_to_rank07(knight_square)) *disambiguate_file = 1;
+      else if (*disambiguate_file != 0)  *disambiguate_rank = 1;
+      else  *disambiguate_file = 1;
     }
   }
 }
@@ -230,7 +235,7 @@ long write_algebraic_notation(char* buffer, size_t buffer_size,
 
   // check and checkmate
   int check = 0, checkmate = 0;
-  if (!is_legal(chess_state, move_to_write)) WRITE_ERROR("read move is not legal.\n");
+  if (!is_legal(chess_state, move_to_write)) WRITE_ERROR("move to write is not legal.\n");
   make_move(chess_state, move_to_write);
   check = is_check(chess_state);
   checkmate = is_checkmate(chess_state);
@@ -356,7 +361,7 @@ long read_algebraic_notation(const char* buffer, size_t buffer_size,
           from = pawn_square;
         }
         if ((sq0x88_t)(pawn_square + chess_state->up_increment * 2) == to
-         && piece(chess_state, to) == EMPTY && piece(chess_state, to - chess_state->up_increment) == EMPTY
+         && piece(chess_state, to) == EMPTY && piece(chess_state, pawn_square + chess_state->up_increment) == EMPTY
          && is_legal(chess_state, move(pawn_square, to, DOUBLE_PAWN_PUSH))) {
           found_valid_pieces++;
           from = pawn_square;
@@ -364,14 +369,14 @@ long read_algebraic_notation(const char* buffer, size_t buffer_size,
         }
         int test_move_flag = (to == enpassent_target(chess_state)) ? ENPASSENT : CAPTURE;
         if ((sq0x88_t)(pawn_square + 1 + chess_state->up_increment) == to
-          && piece_is_enemy(chess_state, to)
+          && (piece_is_enemy(chess_state, to) || test_move_flag == ENPASSENT)
           && is_legal(chess_state, move(pawn_square, to, test_move_flag))) {
           found_valid_pieces++;
           from = pawn_square;
           flags = test_move_flag;
         }
         if ((sq0x88_t)(pawn_square - 1 + chess_state->up_increment) == to
-          && piece_is_enemy(chess_state, to)
+          && (piece_is_enemy(chess_state, to) || test_move_flag == ENPASSENT)
           && is_legal(chess_state, move(pawn_square, to, test_move_flag))) {
           found_valid_pieces++;
           from = pawn_square;
@@ -502,7 +507,9 @@ long read_algebraic_notation(const char* buffer, size_t buffer_size,
   }
 
   // set move
-  *read_move = move(from, to, flags);
+  move_t move_to_test = move(from, to, flags);
+  if (!is_legal(chess_state, move_to_test)) READ_ERROR("read move is not legal.\n");
+  *read_move = move_to_test;
   return bytes_read;
 }
 
