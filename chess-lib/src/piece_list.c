@@ -116,7 +116,7 @@ void move_piece(chess_state_t* chess_state, sq0x88_t from, sq0x88_t to) {
   } else if (piece & BLACK) {
     pl = &chess_state->black_pieces;
   } else {
-    // printf("%d,%x, %x, %x\n", board.move_number, from, to, piece);
+    trace_ply_stack(chess_state);//printf("%d,%x, %x, %x\n", board.move_number, from, to, piece);
     assert(0 && "piece has no colour");
     return;
   }

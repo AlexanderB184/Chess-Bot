@@ -48,7 +48,7 @@ int is_legal_enpassent(const chess_state_t* chess_state, move_t move) {
 
 void trace_ply_stack(const chess_state_t* chess_state) {
   char buffer[512];
-  write_movetext(buffer, 512, chess_state);
+  write_movetext_debug(buffer, 512, chess_state);
   printf("%s\n", buffer);
 }
 

@@ -15,7 +15,6 @@ int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int dep
   }
 
   move_t best_move = moves[0];
-
   make_move(position, best_move);
   score_cp_t score = -abSearch(thread, -beta, -alpha, depth - 1);
   unmake_move(position);
@@ -73,7 +72,6 @@ score_cp_t abSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, in
   }
 
   move_t best_move = moves[0];
-
   make_move(position, best_move);
   score_cp_t best_score = -abSearch(thread, -beta, -alpha, depth - 1);
   unmake_move(position);

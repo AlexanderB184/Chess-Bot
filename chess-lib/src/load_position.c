@@ -4,12 +4,19 @@
 #include <string.h>
 
 #include "../include/chess-lib.h"
+#include "../include/notation.h"
 #include "../include/private/chess-lib-internals.h"
 
-void clear_position(chess_state_t* chess_state) {
+void release_position(chess_state_t* chess_state) {
   if (chess_state->ply_stack) {
     free(chess_state->ply_stack);
+    chess_state->ply_stack = NULL;
   }
+}
+
+void clear_position(chess_state_t* chess_state) {
+  release_position(chess_state);
+
   memset(chess_state, 0, sizeof(*chess_state));
   memcpy(chess_state->board, empty_board, sizeof(empty_board));
 
@@ -22,25 +29,20 @@ void clear_position(chess_state_t* chess_state) {
 
 void init_ply_stack(chess_state_t* chess_state) {
   chess_state->ply_stack_capacity = chess_state->ply_counter + 50ull;
-  chess_state->ply_stack =
-      malloc(sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
+  chess_state->ply_stack = malloc(sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
 }
 
 void load_start_position(chess_state_t* chess_state) {
-  load_position(chess_state,
-                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  load_position(chess_state, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 }
 
 void copy_position(chess_state_t* chess_state,
                    const chess_state_t* state_to_copy) {
-  if (chess_state->ply_stack) {
-    free(chess_state->ply_stack);
-  }
+  release_position(chess_state);
   memcpy(chess_state, state_to_copy, sizeof(chess_state_t));
-  chess_state->ply_stack =
-      malloc(sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
-  memcpy(chess_state->ply_stack, state_to_copy->ply_stack,
-         sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity);
+  size_t ply_stack_size = sizeof(ply_stack_item_t) * chess_state->ply_stack_capacity;
+  chess_state->ply_stack = malloc(ply_stack_size);
+  memcpy(chess_state->ply_stack, state_to_copy->ply_stack, ply_stack_size);
   if (chess_state->black_to_move) {
     chess_state->friendly_pieces = &chess_state->black_pieces;
     chess_state->enemy_pieces = &chess_state->white_pieces;
@@ -52,202 +54,160 @@ void copy_position(chess_state_t* chess_state,
 
 piece_t parse_piece(char letter) {
   switch (letter) {
-    case 'K':
-      return WHITE_KING;
-    case 'Q':
-      return WHITE_QUEEN;
-    case 'R':
-      return WHITE_ROOK;
-    case 'B':
-      return WHITE_BISHOP;
-    case 'N':
-      return WHITE_KNIGHT;
-    case 'P':
-      return WHITE_PAWN;
-    case 'k':
-      return BLACK_KING;
-    case 'q':
-      return BLACK_QUEEN;
-    case 'r':
-      return BLACK_ROOK;
-    case 'b':
-      return BLACK_BISHOP;
-    case 'n':
-      return BLACK_KNIGHT;
-    case 'p':
-      return BLACK_PAWN;
-    default:
-      return EMPTY;
+    case 'K': return WHITE_KING;
+    case 'Q': return WHITE_QUEEN;
+    case 'R': return WHITE_ROOK;
+    case 'B': return WHITE_BISHOP;
+    case 'N': return WHITE_KNIGHT;
+    case 'P': return WHITE_PAWN;
+    case 'k': return BLACK_KING;
+    case 'q': return BLACK_QUEEN;
+    case 'r': return BLACK_ROOK;
+    case 'b': return BLACK_BISHOP;
+    case 'n': return BLACK_KNIGHT;
+    case 'p': return BLACK_PAWN;
+    default:  return EMPTY;
   }
 }
 
-sq0x88_t parse_square(const char* s) {
-  if (*s < 'a' || *s > 'h') return -1;
-  sq0x88_t sq = *s - 'a';
-  s++;
-  if (*s < '1' || *s > '8') return -1;
-  sq += (*s - '1') * 16;
-  return sq;
-}
 
-int parse_row(chess_state_t* chess_state, const char* fen_string, size_t* index,
-              size_t rank) {
-  size_t file = 0;
-  while (file < 8) {
-    char letter = fen_string[*index];
 
-    if (letter >= '1' && letter <= '8') {
-      file += letter - '0';  // empty
+#ifdef PRINT_READ_ERRORS
+#define READ_ERROR(msg, args...) {printf("READ ERROR: reading \"%s\" ", buffer);printf(msg, ##args); return -1;}
+#else
+#define READ_ERROR(msg, args...) {return -1;}
+#endif
 
-      if (fen_string[++*index] == '\0') {
-        return 1;
-      }
+#ifdef PRINT_WRITE_ERRORS
+#define WRITE_ERROR(msg, args...) {printf("WRITE ERROR: ");printf(msg, ##args); buffer[0] = 0; return -1;}
+#else
+#define WRITE_ERROR(msg, args...) {buffer[0] = 0; return -1;}
+#endif
 
-      continue;
-    }
-
-    piece_t piece_to_add = parse_piece(letter);
-
-    if (piece_to_add == EMPTY) {
-      return 1;
-    }
-
-    place_piece(chess_state, rank + file, piece_to_add);
-
-    file++;
-    if (fen_string[++*index] == '\0') {
-      return 1;
-    }
-  }
-  return file != 8;  // error if file is not exactly 8
-}
-
-#define FEN_PARSE_ERROR()                                                  \
-  fprintf(stderr,                                                          \
-          "ERROR: failed to parse FEN string \"%s\".\n Error occurred at " \
-          "byte offset "                                                   \
-          "%zu\n",                                                         \
-          fen_string != NULL ? fen_string : "NULL", index);                \
-  return NULL;
-
-#define FEN_PARSE_ASSERT(cond) \
-  if (!(cond)) {               \
-    FEN_PARSE_ERROR();         \
-  }
-
-#define FEN_PARSE_NEXT(string, index) \
-  FEN_PARSE_ASSERT((string)[++(index)] != 0);
-
-#define FEN_PARSE_EXPECT(string, index, token)    \
-  FEN_PARSE_ASSERT((string)[(index)] == (token)); \
-  FEN_PARSE_NEXT((string), (index));
-
-const char* load_position(chess_state_t* chess_state, const char* fen_string) {
-  size_t index = 0;
-
-  FEN_PARSE_ASSERT(fen_string != NULL);
+long load_position(chess_state_t* chess_state, const char* buffer) {
+  long bytes_read = 0;
+  long size = strlen(buffer) + 1;
 
   clear_position(chess_state);
 
   // pieces
-
-  for (int rank = 7 * 16; rank >= 0; rank -= 16) {
-    int error = parse_row(chess_state, fen_string, &index, rank);
-    FEN_PARSE_ASSERT(error == 0);
-    if (rank != 0) {
-      FEN_PARSE_EXPECT(fen_string, index, '/');
+  if (buffer[bytes_read] == '\0' || bytes_read >= size) {
+    READ_ERROR("fen missing piece table.\n");
+  }
+  for (int rank = 7; rank >= 0; rank--) {
+    int file = 0;
+    while (file < 8) {
+      if (bytes_read >= size) READ_ERROR("fen missing piece table\n");
+      char letter = buffer[bytes_read++];
+      if (letter >= '1' && letter <= '8') {
+        file += letter - '0';
+        continue;
+      }
+      piece_t piece_to_add = parse_piece(letter);
+      if (piece_to_add == EMPTY) {
+        READ_ERROR("invalid piece \'%c\' in fen piece table\n", letter);
+      }
+      place_piece(chess_state, rankfile_to_sq0x88(rank, file), piece_to_add);
+      file++;
+    }
+    if (file != 8) {
+      READ_ERROR("too many pieces in rank %d\n", rank);
+    }
+    if (rank != 0 && (bytes_read >= size || buffer[bytes_read++] != '/')) {
+      READ_ERROR("row in fen piece table not seperated with \'/\'");
     }
   }
-  FEN_PARSE_EXPECT(fen_string, index, ' ');  // skip space
+  
+  bytes_read += skip_whitespace(buffer + bytes_read);
 
   // next to move
-
-  switch (fen_string[index]) {
+  if (buffer[bytes_read] == '\0' || bytes_read >= size) {
+    READ_ERROR("fen missing player to move.\n");
+  }
+  char who2move = buffer[bytes_read++];
+  switch (who2move) {
     case 'w':
       break;
     case 'b':
       update_turn(chess_state);
       break;
     default:
-      FEN_PARSE_ERROR();
+      READ_ERROR("invalid code for player to move \'%c\', must be \'w\' or \'b\'.\n", who2move);
   }
-  FEN_PARSE_NEXT(fen_string, index);
 
-  FEN_PARSE_EXPECT(fen_string, index, ' ');  // skip space
-
+  bytes_read += skip_whitespace(buffer + bytes_read);
   // castle rights
+  if (buffer[bytes_read] == '\0' || bytes_read >= size) {
+    READ_ERROR("fen missing castle rights.\n");
+  }
 
-  if (fen_string[index] == '-') {
-    FEN_PARSE_NEXT(fen_string, index);
+  if (bytes_read < size && buffer[bytes_read] == '-') {
+    bytes_read++;
   } else {
-    if (fen_string[index] == 'K') {
+    if (bytes_read < size && buffer[bytes_read] == 'K') {
       chess_state->castle_rights |= WHITE_KING_SIDE;
-      FEN_PARSE_NEXT(fen_string, index);
+      bytes_read++;
     }
-    if (fen_string[index] == 'Q') {
+    if (bytes_read < size && buffer[bytes_read] == 'Q') {
       chess_state->castle_rights |= WHITE_QUEEN_SIDE;
-      FEN_PARSE_NEXT(fen_string, index);
+      bytes_read++;
     }
-    if (fen_string[index] == 'k') {
+    if (bytes_read < size && buffer[bytes_read] == 'k') {
       chess_state->castle_rights |= BLACK_KING_SIDE;
-      FEN_PARSE_NEXT(fen_string, index);
+      bytes_read++;
     }
-    if (fen_string[index] == 'q') {
+    if (bytes_read < size && buffer[bytes_read] == 'q') {
       chess_state->castle_rights |= BLACK_QUEEN_SIDE;
-      FEN_PARSE_NEXT(fen_string, index);
+      bytes_read++;;
     }
   }
 
-  FEN_PARSE_EXPECT(fen_string, index, ' ');  // skip space
+  bytes_read += skip_whitespace(buffer + bytes_read);
 
   // en passent
-
-  if (fen_string[index] == '-') {
-    chess_state->enpassent_target = -1;
-
-    FEN_PARSE_NEXT(fen_string, index);
-  } else {
-    FEN_PARSE_ASSERT(fen_string[index] >= 'a' && fen_string[index] <= 'h');
-    chess_state->enpassent_target = (sq0x88_t)(fen_string[index] - 'a');
-    FEN_PARSE_NEXT(fen_string, index);
-    FEN_PARSE_ASSERT(fen_string[index] == '3' || fen_string[index] == '6');
-    if (fen_string[index] == '3') {
-      chess_state->enpassent_target += (sq0x88_t)32;  // rank 3
-    } else {
-      chess_state->enpassent_target += (sq0x88_t)80;  // rank 6
-    }
-    FEN_PARSE_NEXT(fen_string, index);
+  if (buffer[bytes_read] == '\0' || bytes_read >= size) {
+    READ_ERROR("fen missing enpassent target.\n");
   }
 
-  FEN_PARSE_EXPECT(fen_string, index, ' ');  // skip space
+  if (bytes_read < size && buffer[bytes_read] == '-') {
+    chess_state->enpassent_target = -1;
+    bytes_read++;
+  } else {
+
+    int out = read_square(buffer + bytes_read, size - bytes_read, &chess_state->enpassent_target);
+    if (out == -1) return -1;
+    bytes_read += out;
+    if (sq0x88_to_rank07(chess_state->enpassent_target) != 3 && sq0x88_to_rank07(chess_state->enpassent_target) != 4) {
+      READ_ERROR("fen contains invalid enpassent target.\n");
+    }
+  }
+
+  bytes_read += skip_whitespace(buffer + bytes_read);
+  // everything past here is optional
 
   // half move clock
-
-  FEN_PARSE_ASSERT(fen_string[index] >= '0' && fen_string[index] <= '9');
-  int half_move_clock = fen_string[index] - '0';
-  FEN_PARSE_NEXT(fen_string, index);
-  if (fen_string[index] >= '0' && fen_string[index] <= '9') {
-    half_move_clock = 10 * half_move_clock + fen_string[index] - '0';
-    FEN_PARSE_NEXT(fen_string, index);
+  if (bytes_read < size && buffer[bytes_read] >= '0' && buffer[bytes_read] <= '9') {
+    int half_move_clock = buffer[bytes_read++] - '0';
+    if (bytes_read < size && buffer[bytes_read] >= '0' && buffer[bytes_read] <= '9') {
+      half_move_clock = 10 * half_move_clock + buffer[bytes_read] - '0';
+    }
+    chess_state->half_move_clock = half_move_clock;
+    bytes_read += skip_whitespace(buffer + bytes_read);
   }
-  chess_state->half_move_clock = half_move_clock;
 
-  FEN_PARSE_EXPECT(fen_string, index, ' ');  // skip space
 
   // full move counter
-  FEN_PARSE_ASSERT(fen_string[index] >= '1' && fen_string[index] <= '9');
-  int full_move_counter = fen_string[index] - '0';
-  index++;
-  while (fen_string[index] >= '0' && fen_string[index] <= '9') {
-    FEN_PARSE_ASSERT(fen_string[index] >= '0' && fen_string[index] <= '9');
-    full_move_counter = 10 * full_move_counter + fen_string[index] - '0';
-    index++;
+  if (bytes_read < size && buffer[bytes_read] >= '1' && buffer[bytes_read] <= '9') {
+    int move_counter = buffer[bytes_read++] - '0';
+    if (bytes_read < size && buffer[bytes_read] >= '0' && buffer[bytes_read] <= '9') {
+      move_counter = 10 * move_counter + buffer[bytes_read] - '0';
+    }
+    chess_state->ply_counter = (move_counter-1) * 2 + chess_state->black_to_move;
   }
-  chess_state->ply_counter =
-      (full_move_counter - 1) * 2 + chess_state->black_to_move;
+
   chess_state->ply_of_last_irreversible_move = chess_state->ply_counter;
 
   init_check(chess_state);
   init_ply_stack(chess_state);
-  return fen_string + index;
+  return bytes_read;
 }

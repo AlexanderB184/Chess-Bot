@@ -54,24 +54,33 @@ size_t generate_psuedo_legal_king_moves(const chess_state_t* chess_state,
   return move_count;
 }
 
+int can_castle_king_side(const chess_state_t* chess_state) {
+  sq0x88_t king_square = chess_state->friendly_pieces->king_square;
+  return ((chess_state->friendly_colour == WHITE &&
+           (chess_state->castle_rights & WHITE_KING_SIDE) != 0) ||
+          (chess_state->friendly_colour == BLACK &&
+           (chess_state->castle_rights & BLACK_KING_SIDE) != 0)) &&
+         piece(chess_state, king_square + 1) == EMPTY &&
+         piece(chess_state, king_square + 2) == EMPTY;
+}
+int can_castle_queen_side(const chess_state_t* chess_state) {
+  sq0x88_t king_square = chess_state->friendly_pieces->king_square;
+  return ((chess_state->friendly_colour == WHITE &&
+           (chess_state->castle_rights & WHITE_QUEEN_SIDE) != 0) ||
+          (chess_state->friendly_colour == BLACK &&
+           (chess_state->castle_rights & BLACK_QUEEN_SIDE) != 0)) &&
+         piece(chess_state, king_square - 1) == EMPTY &&
+         piece(chess_state, king_square - 2) == EMPTY &&
+         piece(chess_state, king_square - 3) == EMPTY;
+}
+
 size_t generate_castling_moves(const chess_state_t* chess_state, move_t* moves,
                                size_t move_count, sq0x88_t king_square) {
   // castling
-  if (((chess_state->friendly_colour == WHITE &&
-        (chess_state->castle_rights & WHITE_KING_SIDE) != 0) ||
-       (chess_state->friendly_colour == BLACK &&
-        (chess_state->castle_rights & BLACK_KING_SIDE) != 0)) &&
-      piece(chess_state, king_square + 1) == EMPTY &&
-      piece(chess_state, king_square + 2) == EMPTY) {
+  if (can_castle_king_side(chess_state)) {
     moves[move_count++] = move(king_square, king_square + 2, KING_CASTLE);
   }
-  if (((chess_state->friendly_colour == WHITE &&
-        (chess_state->castle_rights & WHITE_QUEEN_SIDE) != 0) ||
-       (chess_state->friendly_colour == BLACK &&
-        (chess_state->castle_rights & BLACK_QUEEN_SIDE) != 0)) &&
-      piece(chess_state, king_square - 1) == EMPTY &&
-      piece(chess_state, king_square - 2) == EMPTY &&
-      piece(chess_state, king_square - 3) == EMPTY) {
+  if (can_castle_queen_side(chess_state)) {
     moves[move_count++] = move(king_square, king_square - 2, QUEEN_CASTLE);
   }
   return move_count;

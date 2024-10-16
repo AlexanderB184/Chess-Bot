@@ -59,11 +59,14 @@ int thread_terminated(thread_data_t* thread) {
   return 0;
 }
 
-int bot_move(bot_t* bot, char* buffer, int size) {
+long bot_move(bot_t* bot, char* buffer, int size) {
   thread_data_t* best_thread = bot->threads[0];
   size_t move_count = best_thread->move_count;
   root_move_t* root_move_data = best_thread->root_moves;
   move_t* moves = best_thread->moves;
+  if (move_count == 0) {
+    return -1;
+  }
   move_t best_move = moves[0];
   score_cp_t best_score = root_move_data[0].score;
   for (int i = 1; i < move_count; i++) {
@@ -72,10 +75,7 @@ int bot_move(bot_t* bot, char* buffer, int size) {
       best_move = moves[i];
     }
   }
-  int ret = write_long_algebraic_notation(buffer, size, best_move);
-  if (ret == 0) return 0;
-  buffer[ret++] = 0;
-  return ret;
+  return write_algebraic_notation(buffer, size, &best_thread->position, best_move);
 }
 
 int bot_init(bot_t* bot, bot_settings_t* settings) {
@@ -93,14 +93,20 @@ int bot_init(bot_t* bot, bot_settings_t* settings) {
   return 0;
 }
 
-int bot_load_position(bot_t* bot, char* fen, char** movetext) {
+int bot_load_position(bot_t* bot, char* fen, char* movetext) {
   thread_data_t* main_thread = bot->threads[0];
   chess_state_t* root_position = &main_thread->position;
   load_position(root_position, fen);
   while (*movetext) {
-    move_t move = read_long_algebraic_notation(*movetext, 16, root_position);
+    move_t move;
+    long out = read_algebraic_notation(movetext, strlen(movetext), root_position, &move);
+    if (out == -1) {
+      release_position(root_position);
+      return -1;
+    }
+    movetext += out;
+    movetext += skip_whitespace(movetext);
     make_move(root_position, move);
-    movetext++;
   }
   if (main_thread->moves) free(main_thread->moves);
   if (main_thread->root_moves) free(main_thread->root_moves);
@@ -124,18 +130,22 @@ int bot_load_position(bot_t* bot, char* fen, char** movetext) {
   return 0;
 }
 
-int bot_update_position(bot_t* bot, char * movetext) {
+int bot_update_position(bot_t* bot, char* movetext) {
   thread_data_t* main_thread = bot->threads[0];
   chess_state_t* root_position = &main_thread->position;
-
-  move_t move = read_long_algebraic_notation(movetext, 16, root_position);
-  if (is_null_move(move)) {
-    // move couldn't be read
-    return -1;
+  while (*movetext) {
+    move_t move;
+    long out = read_algebraic_notation(movetext, strlen(movetext)+1, root_position, &move);
+    if (out == -1) {
+      release_position(root_position);
+      return -1;
+    }
+    movetext += out;
+    movetext += skip_whitespace(movetext);
+    make_move(root_position, move);
   }
-  
   // move validation goes here
-  make_move(root_position, move);
+  if (is_gameover(root_position)) return -2;
   if (main_thread->moves) free(main_thread->moves);
   if (main_thread->root_moves) free(main_thread->root_moves);
   main_thread->moves = malloc(sizeof(move_t) * 256);
@@ -144,7 +154,7 @@ int bot_update_position(bot_t* bot, char * movetext) {
   main_thread->root_moves = malloc(sizeof(root_move_t) * main_thread->move_count);
   for (int i = 1; i < bot->nthreads; i++) {
     thread_data_t* thread = bot->threads[i];
-    make_move(&thread->position, move);
+    copy_position(&thread->position, &main_thread->position);
     if (thread->moves) free(thread->moves);
     if (thread->root_moves) free(thread->root_moves);
     thread->move_count = main_thread->move_count;
@@ -212,7 +222,7 @@ int bot_is_running(bot_t* bot) {
 int bot_release(bot_t* bot) {
   bot_stop(bot);
   for (int i = 0; i < bot->nthreads; i++) {
-    clear_position(&bot->threads[i]->position);
+    release_position(&bot->threads[i]->position);
     free(bot->threads[i]->moves);
     free(bot->threads[i]->root_moves);
     free(bot->threads[i]);
