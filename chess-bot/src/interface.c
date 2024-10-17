@@ -18,7 +18,7 @@
 
 #define UNIMPLEMENTED fprintf(stderr, "unimplemented\n")
 #define INVALIDARG(CMD, ARG) fprintf(stderr, "\"%s\" is not a valid argument for command \"%s\"\n", (ARG), (CMD))
-#define MISSINGARG(CMD, ARG) fprintf(stderr, "command \"%s\" is missing required argument \"%s\"\n", (ARG), (CMD))
+#define MISSINGARG(CMD, ARG) fprintf(stderr, "command \"%s\" is missing required argument \"%s\"\n", (CMD), (ARG))
 
 #define TELLGUI(msg, args...) fprintf(stdout, msg, ##args); fflush(stdout)
 
@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
           fprintf(stderr, "invalid fen \"%s\"\n", line);
           continue;
         }
+        line += out;
       }
       arg = next_arg(&line);
       if (arg && strcmp(arg, "moves") == 0) {
@@ -124,36 +125,54 @@ int main(int argc, char **argv) {
           UNIMPLEMENTED;
           arg = next_arg(&line);
         } else if (strcmp(arg, "wtime") == 0) {
-          UNIMPLEMENTED;
+          
           arg = next_arg(&line);
+          if (arg) {
+          bot.match_info.wtime = atoll(arg);
+          }
         } else if (strcmp(arg, "btime") == 0) {
-          UNIMPLEMENTED;
           arg = next_arg(&line);
+          if (arg) {
+            bot.match_info.btime = atoll(arg);
+          }
         } else if (strcmp(arg, "winc") == 0) {
-          UNIMPLEMENTED;
           arg = next_arg(&line);
+          if (arg) {
+            bot.match_info.winc = atoll(arg);
+          }
         } else if (strcmp(arg, "binc") == 0) {
-          UNIMPLEMENTED;
           arg = next_arg(&line);
+          if (arg) {
+            bot.match_info.binc = atoll(arg);
+          }
         } else if (strcmp(arg, "movestogo") == 0) {
           UNIMPLEMENTED;
           arg = next_arg(&line);
         } else if (strcmp(arg, "depth") == 0) {
           arg = next_arg(&line);
-          bot.stop_cond.depth_limit_ply = atoll(arg);
+          if (arg) {
+            bot.stop_cond.depth_limit_ply = atoll(arg);
+          }
         } else if (strcmp(arg, "nodes") == 0) {
           arg = next_arg(&line);
-          bot.stop_cond.node_limit_nds = atoll(arg);
+          if (arg) {
+            bot.stop_cond.node_limit_nds = atoll(arg);
+          }
         } else if (strcmp(arg, "mate") == 0) {
           arg = next_arg(&line);
-          bot.stop_cond.mate_in_ply = atoll(arg);
+          if (arg) {
+            bot.stop_cond.mate_in_ply = atoll(arg);
+          }
         } else if (strcmp(arg, "movetime") == 0) {
           arg = next_arg(&line);
-          bot.stop_cond.time_limit_ms = atoll(arg);
+          if (arg) {
+            bot.stop_cond.time_limit_ms = atoll(arg);
+          }
         } else if (strcmp(arg, "infinite") == 0) {
           bot.stop_cond.depth_limit_ply = 0;
           bot.stop_cond.node_limit_nds = 0;
           bot.stop_cond.time_limit_ms = 0;
+          bot.stop_cond.mate_in_ply = 0;
         } else {
           INVALIDARG(cmd, arg);
         }
