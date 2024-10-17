@@ -17,6 +17,8 @@
 #define BOT_VERSION "0.0"
 
 #define UNIMPLEMENTED fprintf(stderr, "unimplemented\n")
+#define INVALIDARG(CMD, ARG) fprintf(stderr, "\"%s\" is not a valid argument for command \"%s\"\n", (ARG), (CMD))
+#define MISSINGARG(CMD, ARG) fprintf(stderr, "command \"%s\" is missing required argument \"%s\"\n", (ARG), (CMD))
 
 #define MAX_ARGS 64
 
@@ -52,6 +54,8 @@ char * next_arg(char** line_ptr) {
 }
 
 bot_t bot;
+chess_state_t root_pos;
+
 int main(int argc, const char *argv) {
   {
     bot_settings_t settings = {
@@ -86,27 +90,32 @@ int main(int argc, const char *argv) {
     } else if (strcmp(cmd, "debug") == 0) {
       UNIMPLEMENTED;
     } else if (strcmp(cmd, "isready") == 0) {
-      UNIMPLEMENTED;
+      fprintf(stdout, "readyok\n");
     } else if (strcmp(cmd, "setoption") == 0) {
       UNIMPLEMENTED;
     } else if (strcmp(cmd, "register") == 0) {
       UNIMPLEMENTED;
     } else if (strcmp(cmd, "ucinewgame") == 0) {
-      bot_load_position(&bot, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+      bot_load_fen(&bot, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     } else if (strcmp(cmd, "position") == 0) {
       char * arg = next_arg(&line);
-      if (strcmp(arg, "startpos") == 0) {
-        bot_load_position(&bot, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        } else if (strcmp(arg, "fen") == 0) {
-        bot_load_position(&bot, line); // give remainder to bot load
+      if (arg && strcmp(arg, "startpos") == 0) {
+        bot_load_fen(&bot, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+      } else if (arg && strcmp(arg, "fen") == 0) {
+        int out = bot_load_fen(&bot, line);
+        if (out < 0) {
+          fprintf(stderr, "invalid fen \"%s\"\n", line);
+          continue;
+        }
       }
-      char* move_list = strstr(line, "moves");
-      if (move_list) {
-        line = move_list;
-        next_arg(&line);
-        bot_update_position(&bot, line);
+      arg = next_arg(&line);
+      if (arg && strcmp(arg, "moves") == 0) {
+        if (bot_load_moves(&bot, line) < 0) {
+          fprintf(stderr, "invalid move in movetext \"%s\"\n", line);
+          continue;
+        }
       } else {
-        // error
+        MISSINGARG("position", "moves");
       }
     } else if (strcmp(cmd, "go") == 0) {
       int i = 1;
@@ -150,7 +159,7 @@ int main(int argc, const char *argv) {
           stop_cond.node_limit_nds = 0;
           stop_cond.time_limit_ms = 0;
         } else {
-          // unknown or invalid arg
+          INVALIDARG(cmd, arg);
         }
         arg = next_arg(&line);
       }

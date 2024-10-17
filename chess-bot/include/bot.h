@@ -14,10 +14,10 @@ int thread_terminated(thread_data_t* thread);
 int bot_init(bot_t* bot, bot_settings_t* settings);
 
 // loads a position into the bot's internal state
-int bot_load_position(bot_t* bot, char* position_text);
+int bot_load_fen(bot_t* bot, char* position_text);
 
 // plays a move in the current position
-int bot_update_position(bot_t* bot, char* movetext);
+int bot_load_moves(bot_t* bot, char* movetext);
 
 // starts the bot executing the search, stopping either when one of the
 // conditions in 'stop_cond' is met or 'bot_stop' is called.

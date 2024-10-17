@@ -25,7 +25,7 @@ size_t time_passed(thread_data_t* thread) {
 void* bot_run(void* arg) {
   thread_data_t* thread = (thread_data_t*)arg;
   bot_t* bot = thread->bot;
-  (void)bot;
+  copy_position(&thread->position, &bot->root_position);
   thread->terminated = 0;
   thread->depth_searched = 0;
   while (!thread_terminated(thread)) {
@@ -106,82 +106,27 @@ int bot_init(bot_t* bot, bot_settings_t* settings) {
   return 0;
 }
 
-int bot_load_position(bot_t* bot, char* pos_text) {
-  thread_data_t* main_thread = bot->threads[0];
-  chess_state_t* root_position = &main_thread->position;
-  pos_text += skip_whitespace(pos_text);
-  pos_text += load_position(root_position, pos_text);
-  pos_text += skip_whitespace(pos_text);
-  while (*pos_text) {
-    move_t move;
-    long out = read_long_algebraic_notation(pos_text, strlen(pos_text), root_position, &move);
-    if (out == -1) {
-      release_position(root_position);
-      return -1;
-    }
-    pos_text += out;
-    pos_text += skip_whitespace(pos_text);
-    make_move(root_position, move);
-  }
-  if (main_thread->moves) free(main_thread->moves);
-  if (main_thread->root_moves) free(main_thread->root_moves);
-  main_thread->moves = malloc(sizeof(move_t) * 256);
-  main_thread->move_count = generate_legal_moves(root_position, main_thread->moves);
-  main_thread->moves = realloc(main_thread->moves, sizeof(move_t) * main_thread->move_count);
-  main_thread->root_moves = malloc(sizeof(root_move_t) * main_thread->move_count);
-  for (int i = 1; i < bot->nthreads; i++) {
-    thread_data_t* thread = bot->threads[i];
-    if (thread->moves) free(thread->moves);
-    if (thread->root_moves) free(thread->root_moves);
-    copy_position(&thread->position, root_position);
-    thread->move_count = main_thread->move_count;
-    thread->moves = memcpy(
-      malloc(sizeof(move_t) * main_thread->move_count),
-      main_thread->moves,
-      sizeof(move_t) * main_thread->move_count
-    );
-    thread->root_moves = malloc(sizeof(root_move_t) * main_thread->move_count);
-  }
-  return 0;
+int bot_load_fen(bot_t* bot, char* pos_text) {
+  chess_state_t* root_position = &bot->root_position;
+  return load_position(root_position, pos_text);
 }
 
-int bot_update_position(bot_t* bot, char* movetext) {
-  thread_data_t* main_thread = bot->threads[0];
-  chess_state_t* root_position = &main_thread->position;
-  while (*movetext) {
+int bot_load_moves(bot_t* bot, char* movetext) {
+  chess_state_t* root_position = &bot->root_position;
+  long bytes_read = 0;
+  long bytes_to_read = strlen(movetext);
+  while (movetext + bytes_read) {
     move_t move;
-    long out = read_long_algebraic_notation(movetext, strlen(movetext)+1, root_position, &move);
+    long out = read_long_algebraic_notation(movetext + bytes_read, bytes_to_read - bytes_read, root_position, &move);
     if (out == -1) {
       release_position(root_position);
       return -1;
     }
-    movetext += out;
-    movetext += skip_whitespace(movetext);
+    bytes_read += out;
+    bytes_read += skip_whitespace(movetext + bytes_read);
     make_move(root_position, move);
   }
-  // move validation goes here
-  if (is_gameover(root_position)) return -2;
-  if (main_thread->moves) free(main_thread->moves);
-  if (main_thread->root_moves) free(main_thread->root_moves);
-  main_thread->moves = malloc(sizeof(move_t) * 256);
-  main_thread->move_count = generate_legal_moves(root_position, main_thread->moves);
-  main_thread->moves = realloc(main_thread->moves, sizeof(move_t) * main_thread->move_count);
-  main_thread->root_moves = malloc(sizeof(root_move_t) * main_thread->move_count);
-  for (int i = 1; i < bot->nthreads; i++) {
-    thread_data_t* thread = bot->threads[i];
-    copy_position(&thread->position, &main_thread->position);
-    if (thread->moves) free(thread->moves);
-    if (thread->root_moves) free(thread->root_moves);
-    thread->move_count = main_thread->move_count;
-    thread->moves = memcpy(
-      malloc(sizeof(move_t) * main_thread->move_count),
-      main_thread->moves,
-      sizeof(move_t) * main_thread->move_count
-    );
-    thread->root_moves = malloc(sizeof(root_move_t) * main_thread->move_count);
-
-  }
-  return 0;
+  return bytes_read;
 }
 
 int bot_start(bot_t* bot, bot_term_cond_t* stop_cond) {

@@ -50,6 +50,8 @@ typedef struct bot_t {
 
   FILE* log_stream;
   FILE* err_stream;
+
+  chess_state_t root_position;
 } bot_t;
 
 typedef struct thread_data_t {
