@@ -2,13 +2,13 @@
 #include "../include/eval.h"
 #include "../include/bot.h"
 
-int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int depth) {
+int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   // aliasing thread data
-  chess_state_t* position = &thread->position;
-  size_t move_count = thread->move_count;
-  move_t* moves = thread->moves;
-  root_move_t* root_move_data = thread->root_moves;
-  atomic_fetch_add(&thread->bot->nodes_searched, 1);
+  chess_state_t* position = &worker->position;
+  size_t move_count = worker->move_count;
+  move_t* moves = worker->moves;
+  //root_move_t* root_move_data = worker->root_moves;
+  atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
   if (move_count == 0) {
     return 1;
@@ -16,9 +16,9 @@ int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int dep
 
   move_t best_move = moves[0];
   make_move(position, best_move);
-  score_cp_t score = -abSearch(thread, -beta, -alpha, depth - 1);
+  score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
-  root_move_data[0].score = score;
+  //root_move_data[0].score = score;
 
   if (score > alpha) {
     if (score >= beta) {
@@ -27,11 +27,11 @@ int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int dep
     alpha = score;
   }
 
-  for (size_t i = 1; !thread_terminated(thread) && i < move_count; i++) {
+  for (size_t i = 1; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
-    score = -abSearch(thread, -beta, -alpha, depth - 1);
+    score = -abSearch(worker, -beta, -alpha, depth - 1);
     unmake_move(position);
-    root_move_data[i].score = score;
+    //root_move_data[i].score = score;
 
 
     if (score >= beta) {
@@ -47,10 +47,10 @@ int rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int dep
   return 0;
 }
 
-score_cp_t abSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int depth) {
+score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   // aliasing thread data
-  chess_state_t* position = &thread->position;
-  atomic_fetch_add(&thread->bot->nodes_searched, 1);
+  chess_state_t* position = &worker->position;
+  atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
   if (depth <= 0) {
     return eval(position);
@@ -73,24 +73,24 @@ score_cp_t abSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, in
 
   move_t best_move = moves[0];
   make_move(position, best_move);
-  score_cp_t best_score = -abSearch(thread, -beta, -alpha, depth - 1);
+  score_cp_t best_score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
-
+  /*
   if (best_score > alpha) {
     if (best_score >= beta) {
       return best_score;
     }
     alpha = best_score;
-  }
+  }*/
 
-  for (size_t i = 1; !thread_terminated(thread) && i < move_count; i++) {
+  for (size_t i = 1; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
-    score_cp_t score = -abSearch(thread, -beta, -alpha, depth - 1);
+    score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
     unmake_move(position);
 
-    if (score >= beta) {
-      return score;
-    }
+    //if (score >= beta) {
+    //  return score;
+    //}
 
     if (score > best_score) {
       best_score = score;

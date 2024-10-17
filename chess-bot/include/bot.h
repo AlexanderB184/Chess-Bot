@@ -1,60 +1,134 @@
 #ifndef BOT_H
 #define BOT_H
 
-#include "../../chess-lib/include/chess-lib.h"
-#include "bot-types.h"
-
+#include <pthread.h>
+#include <stdatomic.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
-int thread_terminated(thread_data_t* thread);
+#include "../../chess-lib/include/chess-lib.h"
 
-// initialised the bot to a valid state
-// intiailised with settings from 'settings'
-// if 'settings' is NULL bot is initialised with defaults
+#define CHECKMATE_SCORE_CENTIPAWNS (score_cp_t)(-16384)
+#define STALEMATE_SCORE_CENTIPAWNS (score_cp_t)(0)
+#define DRAW_SCORE_CENTIPAWNS (score_cp_t)(0)
+#define MAX_SCORE (score_cp_t)(INT16_MAX)
+#define MIN_SCORE (score_cp_t)(-INT16_MAX)
+
+typedef int16_t score_cp_t;
+
+struct match_state_t;
+struct bot_settings_t;
+struct bot_term_cond_t;
+struct bot_t;
+struct worker_t;
+
+
+
+typedef struct bot_settings_t{
+  int debug; // debug flag
+  int Hash; // size of transposition table in MB
+  int Ponder; // whether pondering is enabled
+} bot_settings_t;
+
+typedef struct bot_term_cond_t{
+    size_t time_limit_ms;
+    size_t node_limit_nds;
+    size_t depth_limit_ply;
+    size_t mate_in_ply;
+} bot_term_cond_t;
+
+typedef struct match_state_t{
+  // time control info
+  size_t wtime;
+  size_t btime;
+  size_t winc;
+  size_t binc;
+} match_state_t;
+
+typedef struct bot_t {
+  int n_threads; // number of threads to use
+  struct worker_t** workers;
+
+  struct bot_settings_t settings;
+
+  enum {SEARCHMODE_INACTIVE, SEARCHMODE_REGULAR, SEARCHMODE_PONDER} search_mode; // inactive=0, regular=1, ponder=2
+
+  // state
+  atomic_bool running, abort;
+  struct timespec start_time;
+  atomic_uintmax_t duration_ms;
+  atomic_uintmax_t nodes_searched;
+  atomic_uintmax_t depth_searched;
+
+  // termination conditions
+  struct bot_term_cond_t stop_cond;
+
+  // match info
+  struct match_state_t match_info;
+
+  // position
+  chess_state_t root_position;
+
+  // shared structures
+  void* transpostion_table;
+} bot_t;
+
+//
+// basic single threaded worker type
+typedef struct worker_t {
+  // bot api should only look at this bit
+  int id;
+  pthread_t handle;
+  int terminated;
+  bot_t* bot;
+
+  chess_state_t position;
+  int move_count;
+  move_t best_move;
+  score_cp_t best_score;
+  move_t moves[256];
+
+} worker_t;
+
+/*
+typedef struct {
+  move_t move, refutation;
+  score_cp_t score;
+  int depth_searched;
+} root_move_t;
+*/
+
+
+// initialises the bot with settings,
+// if settings is null it uses default settings
 int bot_init(bot_t* bot, bot_settings_t* settings);
 
-// loads a position into the bot's internal state
-int bot_load_fen(bot_t* bot, char* position_text);
+// loads the fen string into position
+int bot_load_fen(bot_t* bot, char* postext);
 
-// plays a move in the current position
+// loads the moves into position
 int bot_load_moves(bot_t* bot, char* movetext);
 
-// starts the bot executing the search, stopping either when one of the
-// conditions in 'stop_cond' is met or 'bot_stop' is called.
-int bot_start(bot_t* bot, bot_term_cond_t* stop_cond);
+// starts the bot
+int bot_start(bot_t* bot);
 
-// runs the search in ponder mode, stopping if 'bot_stop' is called or if 'ponder_hit' or 'ponder_miss' are called.
-// 'ponder_hit' converts the ponder search into a regular search.
-// 'ponder_miss' cancels the ponder search and restarts with a regular search.
-int bot_ponder(bot_t* bot, char* move);
+// starts the bot pondering
+int bot_ponder(bot_t* bot);
+
+// converts the ponder search into regular searching
 int bot_ponder_hit(bot_t* bot);
-int bot_ponder_miss(bot_t* bot);
 
-// signals to the bot to stop running as soon as possible
+// cancels the search
 int bot_stop(bot_t* bot);
 
-// releases the resources of the bot
+// releases bot resources
 int bot_release(bot_t* bot);
 
-// uses the results from the search to select a move.
-long bot_move(bot_t* bot, char* buffer, int size);
+// called when the bot completes a search or the search is cancelled
+void bot_on_stop(bot_t* bot);
 
-int bot_wait(bot_t* bot);
 int bot_is_running(bot_t* bot);
-
-int bot_save_stats(bot_t* bot, FILE* stream);
-
-#define START_LOG(BOT) fprintf((BOT)->log_stream, "info")
-#define LOG_DEPTH(BOT) fprintf((BOT)->log_stream, " depth %zu", (BOT)->threads[0]->depth_searched)
-#define LOG_NODES(BOT) fprintf((BOT)->log_stream, " nodes %zu", (BOT)->nodes_searched)
-#define LOG_TIME(BOT) fprintf((BOT)->log_stream, " time %zu", (BOT)->duration_ms)
-#define END_LOG(BOT) fprintf((BOT)->log_stream, "\n")
-
-#define SUBMIT_BEST_MOVE(BOT)                                 \
-  {                                                           \
-    char move_buffer[16];                                     \
-    bot_move((BOT), move_buffer, sizeof(move_buffer));        \
-    fprintf((BOT)->log_stream, "bestmove %s\n", move_buffer); \
-  }
+int bot_wait(bot_t* bot);
 
 #endif

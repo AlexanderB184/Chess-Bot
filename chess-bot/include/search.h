@@ -1,11 +1,12 @@
 #ifndef SEARCH_H
 #define SEARCH_H
 
-#include "bot-types.h"
+#include "bot.h"
+#include "worker.h"
 
 
-int      rootSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int depth);
-score_cp_t abSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int depth);
-score_cp_t  qSearch(thread_data_t* thread, score_cp_t alpha, score_cp_t beta, int depth);
+int      rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth);
+score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth);
+score_cp_t  qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth);
 
 #endif

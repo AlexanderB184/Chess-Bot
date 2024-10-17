@@ -20,7 +20,7 @@
 #define INVALIDARG(CMD, ARG) fprintf(stderr, "\"%s\" is not a valid argument for command \"%s\"\n", (ARG), (CMD))
 #define MISSINGARG(CMD, ARG) fprintf(stderr, "command \"%s\" is missing required argument \"%s\"\n", (ARG), (CMD))
 
-#define MAX_ARGS 64
+#define TELLGUI(msg, args...) fprintf(stdout, msg, ##args); fflush(stdout)
 
 char * next_arg(char** line_ptr) {
     char* line = *line_ptr;
@@ -56,16 +56,10 @@ char * next_arg(char** line_ptr) {
 bot_t bot;
 chess_state_t root_pos;
 
-int main(int argc, const char *argv) {
+int main(int argc, char **argv) {
   {
-    bot_settings_t settings = {
-        .nthreads = 1,
-        .log_stream = stdout,
-        .err_stream = stderr,
-    };
-    if (bot_init(&bot, &settings)) {
-      fprintf(stderr,
-              "failed to initialise bot " BOT_NAME " " BOT_VERSION "\n");
+    if (bot_init(&bot, NULL)) {
+      fprintf(stderr, "failed to initialise bot " BOT_NAME " " BOT_VERSION "\n");
       exit(-1);
     }
   }
@@ -73,11 +67,13 @@ int main(int argc, const char *argv) {
   do {
     if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
         if (feof(stdin)) {
+          fprintf(stderr, "bot reached eof\n");
             break;  // End of input
         }
       perror("fgets failed");
       exit(-1);
     }
+    //fprintf(stderr, "[BOT RECIEVED] %s", buffer);
     char* line = buffer;
     char* cmd = next_arg(&line);
     if (cmd == NULL) {
@@ -87,10 +83,12 @@ int main(int argc, const char *argv) {
       fprintf(stdout, "id name " BOT_NAME " " BOT_VERSION "\n");
       fprintf(stdout, "id author " AUTHOR "\n");
       fprintf(stdout, "uciok\n");
+      fflush(stdout);
     } else if (strcmp(cmd, "debug") == 0) {
       UNIMPLEMENTED;
     } else if (strcmp(cmd, "isready") == 0) {
       fprintf(stdout, "readyok\n");
+      fflush(stdout);
     } else if (strcmp(cmd, "setoption") == 0) {
       UNIMPLEMENTED;
     } else if (strcmp(cmd, "register") == 0) {
@@ -118,8 +116,6 @@ int main(int argc, const char *argv) {
         MISSINGARG("position", "moves");
       }
     } else if (strcmp(cmd, "go") == 0) {
-      int i = 1;
-      bot_term_cond_t stop_cond;
       char * arg = next_arg(&line);
       while (arg) {
         if (strcmp(arg, "searchmoves") == 0) {
@@ -144,26 +140,27 @@ int main(int argc, const char *argv) {
           arg = next_arg(&line);
         } else if (strcmp(arg, "depth") == 0) {
           arg = next_arg(&line);
-          stop_cond.depth_limit_ply = atoll(arg);
+          bot.stop_cond.depth_limit_ply = atoll(arg);
         } else if (strcmp(arg, "nodes") == 0) {
           arg = next_arg(&line);
-          stop_cond.node_limit_nds = atoll(arg);
+          bot.stop_cond.node_limit_nds = atoll(arg);
         } else if (strcmp(arg, "mate") == 0) {
           arg = next_arg(&line);
-          stop_cond.depth_limit_ply = atoll(arg);
+          bot.stop_cond.mate_in_ply = atoll(arg);
         } else if (strcmp(arg, "movetime") == 0) {
           arg = next_arg(&line);
-          stop_cond.time_limit_ms = atoll(arg);
+          bot.stop_cond.time_limit_ms = atoll(arg);
         } else if (strcmp(arg, "infinite") == 0) {
-          stop_cond.depth_limit_ply = 0;
-          stop_cond.node_limit_nds = 0;
-          stop_cond.time_limit_ms = 0;
+          bot.stop_cond.depth_limit_ply = 0;
+          bot.stop_cond.node_limit_nds = 0;
+          bot.stop_cond.time_limit_ms = 0;
         } else {
           INVALIDARG(cmd, arg);
         }
         arg = next_arg(&line);
       }
-      bot_start(&bot, &stop_cond);
+
+      bot_start(&bot);
     } else if (strcmp(cmd, "stop") == 0) {
       bot_stop(&bot);
     } else if (strcmp(cmd, "ponderhit") == 0) {
@@ -171,6 +168,8 @@ int main(int argc, const char *argv) {
     } else if (strcmp(cmd, "quit") == 0) {
       bot_release(&bot);
       exit(0);
+    } else {
+      fprintf(stderr, "\"%s\" is not a valid command\n", cmd);
     }
   } while (1);
   bot_release(&bot);

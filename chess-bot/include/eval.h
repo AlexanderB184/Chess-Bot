@@ -1,7 +1,7 @@
 #ifndef EVAL_H
 #define EVAL_H
 
-#include "bot-types.h"
+#include "bot.h"
 
 #define PAWN_VALUE ((score_cp_t)100)
 #define KNIGHT_VALUE ((score_cp_t)320)

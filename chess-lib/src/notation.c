@@ -8,13 +8,13 @@
 #include "../include/notation.h"
 
 #ifdef PRINT_READ_ERRORS
-#define READ_ERROR(msg, args...) {printf("READ ERROR: reading \"%s\" ", buffer);printf(msg, ##args); return -1;}
+#define READ_ERROR(msg, args...) {fprintf(stderr,"READ ERROR: reading \"%s\" ", buffer);fprintf(stderr, msg, ##args); return -1;}
 #else
 #define READ_ERROR(msg, args...) {return -1;}
 #endif
 
 #ifdef PRINT_WRITE_ERRORS
-#define WRITE_ERROR(msg, args...) {printf("WRITE ERROR: ");printf(msg, ##args); buffer[0] = 0; return -1;}
+#define WRITE_ERROR(msg, args...) {fprintf(stderr,"WRITE ERROR: ");printf(msg, ##args); buffer[0] = 0; return -1;}
 #else
 #define WRITE_ERROR(msg, args...) {buffer[0] = 0; return -1;}
 #endif
@@ -39,7 +39,7 @@ int is_rank(char c) {
 long write_square(char* buffer, size_t buffer_size, sq0x88_t square) {
   if (buffer_size < 3) return -1;
   if (off_the_board(square)) {
-    WRITE_ERROR("square is off the board, square HEX valye: \'%02x\'.\n", square);
+    WRITE_ERROR("square is off the board, square HEX value: \'%02x\'.\n", square);
   }
   buffer[0] = sq0x88_to_file07(square) + 'a';
   buffer[1] = sq0x88_to_rank07(square) + '1';
@@ -53,7 +53,7 @@ long read_square(const char* buffer, size_t buffer_size, sq0x88_t* square) {
   if (!is_file(file)){
     READ_ERROR("letter \'%c\' is not a valid file\n", file);
   }
-  if (!is_rank(file)){
+  if (!is_rank(rank)){
     READ_ERROR("letter \'%c\' is not a valid rank\n", rank);
   }
   *square = rankfile_to_sq0x88(rank - '1', file - 'a');
@@ -594,7 +594,7 @@ long read_long_algebraic_notation(const char* buffer, size_t buffer_size,
         case ROOK: move_flags |= ROOK_PROMOTE_TO; break;
         case BISHOP: move_flags |= BISHOP_PROMOTE_TO; break;
         case KNIGHT: move_flags |= KNIGHT_PROMOTE_TO; break;
-        default: return -1;
+        default: READ_ERROR("invalid promotion target\n")
       }
     }
   } else if (piece(chess_state, from) & KING) {
