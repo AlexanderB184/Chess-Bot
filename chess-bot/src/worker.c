@@ -12,7 +12,7 @@ void bot_on_stop(bot_t* bot) {
         pthread_join(bot->workers[id]->handle, NULL);
     }
     log_info(bot);
-    bestmove(bot->workers[0]->prev_best_move, null_move);
+    bestmove(bot->workers[0]->moves[0], null_move);
     atomic_store(&bot->running, 0);
 }
 
@@ -22,16 +22,10 @@ void* worker_start(void* arg) {
 
   copy_position(&worker->position, &bot->root_position);
   worker->move_count = generate_legal_moves(&worker->position, worker->moves);
-
-  worker->best_move = worker->moves[0];
-  worker->best_score = MIN_SCORE;
+  
 
   while (!stop(worker)) {
     rootSearch(worker, MIN_SCORE, MAX_SCORE, bot->depth_searched);
-    if (!stop(worker)) {
-      worker->prev_best_move = worker->best_move;
-      worker->prev_best_score = worker->best_score;
-    }
     bot->depth_searched++;
   }
 
@@ -85,7 +79,7 @@ int is_main_thread(const worker_t* worker) {
 void log_info(const bot_t* bot) {
   fprintf(stdout, "info depth %ld nodes %ld time %ld score %d\n",
           atomic_load(&bot->depth_searched), atomic_load(&bot->nodes_searched),
-          time_passed(&bot->start_time), bot->workers[0]->prev_best_score);
+          time_passed(&bot->start_time), bot->workers[0]->scores[0]);
   fflush(stdout);
 }
 

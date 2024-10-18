@@ -9,6 +9,8 @@
 #include <signal.h>
 #include <ctype.h>
 
+#include "../../chess-lib/include/chess-lib.h"
+
 typedef struct {
     pid_t pid;
     FILE* to_bot;
@@ -22,6 +24,7 @@ int kill_bot(bot_interface_t *bot_iface);
 
 int send_command(bot_interface_t* bot_iface, const char * cmd);
 
+#define SEND(BOT, CMD, ARGS...) { char CMDBUF[1024]; sprintf(CMDBUF, CMD, ##ARGS); send_command(BOT, CMDBUF); }
 
 char * read_response(bot_interface_t* bot_iface, char * buffer, size_t size);
 
@@ -30,5 +33,5 @@ int wait_response(bot_interface_t* bot_iface, const char* token, char* buffer, s
 
 char * next_arg(char** line);
 
-void add_move(char* movetext, size_t space, char* move);
+void add_move(char* movetext, size_t space, chess_state_t* match, char* move);
 #endif

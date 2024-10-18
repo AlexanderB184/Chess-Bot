@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
       exit(-1);
     }
   }
-  char buffer[256];
+  char buffer[1024];
   do {
     if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
         if (feof(stdin)) {

@@ -628,7 +628,7 @@ long write_movetext_debug(char* buffer, size_t buffer_size,
 long write_movetext(char* buffer, size_t buffer_size,
                     const chess_state_t* chess_state, const char* start_position) {
   long bytes_written = 0, out;
-  chess_state_t state;
+  chess_state_t state = {};
   if (start_position == NULL) {
     load_start_position(&state);
   } else {
@@ -640,6 +640,10 @@ long write_movetext(char* buffer, size_t buffer_size,
     make_move(&state, move);
     if (out == -1) break;
     bytes_written += out;
+
+    if (bytes_written < buffer_size) {
+      buffer[bytes_written++] = ' ';
+    }
   }
   free(state.ply_stack);
   return bytes_written;

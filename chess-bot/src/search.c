@@ -13,8 +13,7 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     return 1;
   }
 
-  move_t best_move = moves[0];
-  make_move(position, best_move);
+  make_move(position, moves[0]);
   score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
   worker->scores[0] = score;
@@ -32,18 +31,6 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     unmake_move(position);
     worker->scores[i] = score;
 
-    for (int j = i; j > 0; j--) {
-      if (worker->scores[j - 1] < worker->scores[j]) {
-        score_cp_t tscore = worker->scores[j - 1];
-        worker->scores[j - 1] = worker->scores[j];
-        worker->scores[j] = tscore;
-
-        move_t tmove = worker->moves[j - 1];
-        worker->moves[j - 1] = worker->moves[j];
-        worker->moves[j] = tmove;
-      }
-    }
-
     if (score >= beta) {
       return 1;
     }
@@ -53,17 +40,33 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     }  
   }
 
+  for (int i = 1; i < move_count; i++) {
+    for (int j = i; j > 0; j--) {
+      if (worker->scores[j - 1] < worker->scores[j]) {
+        score_cp_t tscore = worker->scores[j - 1];
+        worker->scores[j - 1] = worker->scores[j];
+        worker->scores[j] = tscore;
+
+        move_t tmove = worker->moves[j - 1];
+        worker->moves[j - 1] = worker->moves[j];
+        worker->moves[j] = tmove;
+      } else {
+        break;
+      }
+    }
+  }
+
   return 0;
 }
 
 score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   // aliasing thread data
   chess_state_t* position = &worker->position;
-  atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
-  if (depth <= 0) {
-    return eval(position);
+  if (depth <= 0 && !is_check(position)) {
+    return qSearch(worker, alpha, beta, depth);
   }
+  atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
   if (is_draw(position)) {
     return DRAW_SCORE_CENTIPAWNS;
@@ -104,6 +107,65 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
     if (score > best_score) {
       best_score = score;
       best_move = moves[i];
+      if (score > alpha) {
+        alpha = score;
+      }
+    }
+  }
+
+  return best_score;
+}
+
+score_cp_t  qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
+  chess_state_t* position = &worker->position;
+
+  if (is_check(position)) {
+    return abSearch(worker, alpha, beta, depth);
+  }
+
+  atomic_fetch_add(&worker->bot->nodes_searched, 1);
+
+  if (is_draw(position)) {
+    return DRAW_SCORE_CENTIPAWNS;
+  }
+
+  move_t moves[256];
+  size_t move_count = generate_legal_moves(position, moves);
+
+  if (move_count == 0) {
+    if (is_check(position)) {
+      return CHECKMATE_SCORE_CENTIPAWNS;
+    } else {
+      return STALEMATE_SCORE_CENTIPAWNS;
+    }
+  }
+
+  score_cp_t stand_pat = eval(position);
+
+  if (stand_pat >= beta) {
+    return stand_pat;
+  }
+
+  if (stand_pat > alpha) {
+    alpha = stand_pat;
+  }
+
+  score_cp_t best_score = stand_pat;
+  for (int i = 0; i < move_count; i++) {
+    if (!is_capture(moves[i]) && !is_promotion(moves[i])) {
+      continue;
+    }
+
+    make_move(position, moves[i]);
+    score_cp_t score = -qSearch(worker, -beta, -alpha, depth - 1);
+    unmake_move(position);
+
+    if (score >= beta) {
+      return score;
+    }
+
+    if (score > best_score) {
+      best_score = score;
       if (score > alpha) {
         alpha = score;
       }
