@@ -14,10 +14,10 @@ int main(int argc, const char** argv) {
 
     send_command(&bot, "uci");
     wait_response(&bot, "uciok", buffer, sizeof(buffer));
-    send_command(&bot, "ucinewgame");
+    send_command(&bot, "position startpos moves d2d4 e7e5 c2c4 e5d4 d1d4 b8c6 d4c3");
     send_command(&bot, "isready");
     wait_response(&bot, "readyok", buffer, sizeof(buffer));
-    send_command(&bot, "go depth 5");
+    send_command(&bot, "go depth 8");
     wait_response(&bot, "bestmove", buffer, sizeof(buffer));
     /*add_move(moves, sizeof(moves), buffer);
     sprintf(buffer, "position startpos moves %s", moves);

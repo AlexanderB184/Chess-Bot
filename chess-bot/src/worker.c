@@ -12,7 +12,7 @@ void bot_on_stop(bot_t* bot) {
         pthread_join(bot->workers[id]->handle, NULL);
     }
     log_info(bot);
-    bestmove(bot->workers[0]->best_move, null_move);
+    bestmove(bot->workers[0]->prev_best_move, null_move);
     atomic_store(&bot->running, 0);
 }
 
@@ -28,6 +28,10 @@ void* worker_start(void* arg) {
 
   while (!stop(worker)) {
     rootSearch(worker, MIN_SCORE, MAX_SCORE, bot->depth_searched);
+    if (!stop(worker)) {
+      worker->prev_best_move = worker->best_move;
+      worker->prev_best_score = worker->best_score;
+    }
     bot->depth_searched++;
   }
 
@@ -41,12 +45,12 @@ void* worker_start(void* arg) {
   return NULL;
 }
 
-size_t time_passed(const struct timespec* start_time) {
+long time_passed(const struct timespec* start_time) {
   struct timespec curr_time;
   clock_gettime(CLOCK_MONOTONIC, &curr_time);
-  size_t delta_s = (curr_time.tv_sec - start_time->tv_sec);
-  size_t delta_ns = (curr_time.tv_nsec - start_time->tv_nsec);
-  size_t duration_ms = delta_s * 1000 + delta_ns / (1000 * 1000);
+  long delta_s = (curr_time.tv_sec - start_time->tv_sec);
+  long delta_ns = (curr_time.tv_nsec - start_time->tv_nsec);
+  long duration_ms = delta_s * 1000 + delta_ns / (1000 * 1000);
   return duration_ms;
 }
 
@@ -79,9 +83,9 @@ int is_main_thread(const worker_t* worker) {
 }
 
 void log_info(const bot_t* bot) {
-  fprintf(stdout, "info depth %ld nodes %ld time %ld\n",
+  fprintf(stdout, "info depth %ld nodes %ld time %ld score %d\n",
           atomic_load(&bot->depth_searched), atomic_load(&bot->nodes_searched),
-          time_passed(&bot->start_time));
+          time_passed(&bot->start_time), bot->workers[0]->prev_best_score);
   fflush(stdout);
 }
 

@@ -7,7 +7,6 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   chess_state_t* position = &worker->position;
   size_t move_count = worker->move_count;
   move_t* moves = worker->moves;
-  //root_move_t* root_move_data = worker->root_moves;
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
   if (move_count == 0) {
@@ -18,7 +17,7 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   make_move(position, best_move);
   score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
-  //root_move_data[0].score = score;
+  worker->scores[0] = score;
 
   if (score > alpha) {
     if (score >= beta) {
@@ -31,8 +30,19 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     make_move(position, moves[i]);
     score = -abSearch(worker, -beta, -alpha, depth - 1);
     unmake_move(position);
-    //root_move_data[i].score = score;
+    worker->scores[i] = score;
 
+    for (int j = i; j > 0; j--) {
+      if (worker->scores[j - 1] < worker->scores[j]) {
+        score_cp_t tscore = worker->scores[j - 1];
+        worker->scores[j - 1] = worker->scores[j];
+        worker->scores[j] = tscore;
+
+        move_t tmove = worker->moves[j - 1];
+        worker->moves[j - 1] = worker->moves[j];
+        worker->moves[j] = tmove;
+      }
+    }
 
     if (score >= beta) {
       return 1;
@@ -40,8 +50,7 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
 
     if (score > alpha) {
       alpha = score;
-    }
-    
+    }  
   }
 
   return 0;
@@ -75,22 +84,22 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   make_move(position, best_move);
   score_cp_t best_score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
-  /*
+  
   if (best_score > alpha) {
     if (best_score >= beta) {
       return best_score;
     }
     alpha = best_score;
-  }*/
+  }
 
   for (size_t i = 1; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
     score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
     unmake_move(position);
 
-    //if (score >= beta) {
-    //  return score;
-    //}
+    if (score >= beta) {
+      return score;
+    }
 
     if (score > best_score) {
       best_score = score;

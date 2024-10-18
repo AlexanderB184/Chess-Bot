@@ -14,7 +14,7 @@
 
 #define AUTHOR "Alex B"
 #define BOT_NAME "ABBOT"
-#define BOT_VERSION "0.0"
+#define BOT_VERSION "0.2"
 
 #define UNIMPLEMENTED fprintf(stderr, "unimplemented\n")
 #define INVALIDARG(CMD, ARG) fprintf(stderr, "\"%s\" is not a valid argument for command \"%s\"\n", (ARG), (CMD))
