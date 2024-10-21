@@ -1,12 +1,12 @@
 #include "runbot.h"
 
 
-char buffer[1024];
-char moves[512];
+char buffer[3000];
+char moves[3000] = "";
 
 
-chess_state_t match;
-
+chess_state_t match = {};
+//const char* startpos = "r1bqkbnr/pppp1ppp/2n5/8/2P5/2Q5/PP2PPPP/RNB1KBNR b KQkq - 2 4";
 int main(int argc, const char** argv) {
     if (argc != 3) {
         printf("usage: %s [baseline path] [comparison path]\n", argv[0]);
@@ -42,6 +42,5 @@ int main(int argc, const char** argv) {
     fprintf(stdout, "%s\n", buffer);
     send_command(&bot[0], "quit");
     send_command(&bot[1], "quit");
-
-    
+   
 }

@@ -36,3 +36,21 @@ score_cp_t eval(const chess_state_t* position) {
 
   return score;
 }
+
+int is_repetition(const chess_state_t* chess_state, int ply_of_root) {
+  if (chess_state->ply_counter - chess_state->ply_of_last_irreversible_move <
+      3) {
+    return 0;
+  }
+  zobrist_t current_zobrist = chess_state->zobrist;
+  int repetitions = 1;
+  for (int i = chess_state->ply_counter - 2; i >= chess_state->ply_of_last_irreversible_move; i -= 2) {
+    if (i >= ply_of_root) {
+      return 1;
+    }
+    if (chess_state->ply_stack[i].zobrist == current_zobrist) {
+      repetitions++;
+    }
+  }
+  return repetitions >= 3;
+}

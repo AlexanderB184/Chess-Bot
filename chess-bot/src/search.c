@@ -14,30 +14,34 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   }
 
   make_move(position, moves[0]);
-  score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
+  score_cp_t first_move_score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
-  worker->scores[0] = score;
+  worker->scores[0] = first_move_score;
 
-  if (score > alpha) {
-    if (score >= beta) {
+  if (first_move_score > alpha) {
+    if (first_move_score >= beta) {
+      printf("FAILED HIGH\n");
         return 1;
     }
-    alpha = score;
+    alpha = first_move_score;
   }
 
   for (size_t i = 1; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
-    score = -abSearch(worker, -beta, -alpha, depth - 1);
+    
+    score_cp_t score = -abSearch(worker, MIN_SCORE, MAX_SCORE, depth - 1);
+    //printf("%d %d\n", alpha, score);
     unmake_move(position);
     worker->scores[i] = score;
 
     if (score >= beta) {
+      printf("FAILED HIGH\n");
       return 1;
     }
 
     if (score > alpha) {
       alpha = score;
-    }  
+    }
   }
 
   for (int i = 1; i < move_count; i++) {
@@ -55,6 +59,13 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
       }
     }
   }
+  //for (int i = 0; i < move_count; i++) {
+  //  char buffer[8];
+  //  write_long_algebraic_notation(buffer, sizeof(buffer) , worker->moves[i]);
+  //  printf("%s:%03d,", buffer,worker->scores[i]);
+  //}
+  //  printf("\n");
+    
 
   return 0;
 }
@@ -68,7 +79,9 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   }
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
-  if (is_draw(position)) {
+  if (is_draw_by_50_move_rule(position)
+   || is_draw_by_insufficient_material(position)
+   || is_repetition(position, worker->root_ply)) {
     return DRAW_SCORE_CENTIPAWNS;
   }
 
@@ -151,6 +164,7 @@ score_cp_t  qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   }
 
   score_cp_t best_score = stand_pat;
+
   for (int i = 0; i < move_count; i++) {
     if (!is_capture(moves[i]) && !is_promotion(moves[i])) {
       continue;

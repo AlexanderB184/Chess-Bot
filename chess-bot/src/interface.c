@@ -22,6 +22,8 @@
 
 #define TELLGUI(msg, args...) fprintf(stdout, msg, ##args); fflush(stdout)
 
+#define BUFFER_SIZE 1 << 12
+
 char * next_arg(char** line_ptr) {
     char* line = *line_ptr;
     while (*line && isspace(*line)) {
@@ -63,9 +65,9 @@ int main(int argc, char **argv) {
       exit(-1);
     }
   }
-  char buffer[1024];
+  char buffer[BUFFER_SIZE];
   do {
-    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+    if (fgets(buffer, BUFFER_SIZE, stdin) == NULL) {
         if (feof(stdin)) {
           fprintf(stderr, "bot reached eof\n");
             break;  // End of input
@@ -85,7 +87,14 @@ int main(int argc, char **argv) {
       fprintf(stdout, "uciok\n");
       fflush(stdout);
     } else if (strcmp(cmd, "debug") == 0) {
-      UNIMPLEMENTED;
+      char * arg = next_arg(&line);
+      if (arg && strcmp(arg, "on") == 0) {
+        bot.settings.debug = 1;
+      } else if (arg && strcmp(arg, "off") == 0) {
+        bot.settings.debug = 0;
+      } else {
+        MISSINGARG("debug", "on/off");
+      }
     } else if (strcmp(cmd, "isready") == 0) {
       fprintf(stdout, "readyok\n");
       fflush(stdout);

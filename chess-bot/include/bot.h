@@ -87,6 +87,7 @@ typedef struct worker_t {
   int move_count;
   score_cp_t scores[256];
   move_t moves[256];
+  int root_ply;
 
 } worker_t;
 

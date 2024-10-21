@@ -56,7 +56,7 @@ int kill_bot(bot_interface_t* bot_iface) {
 
 int send_command(bot_interface_t* bot_iface, const char* cmd) {
   //char buffer[256];
-  fprintf(stdout, "[GUI TO %s BOT] %s\n", bot_iface->name, cmd);
+  if (!quiet_mode) fprintf(stdout, "[GUI TO %s BOT] %s\n", bot_iface->name, cmd);
   if (fprintf(bot_iface->to_bot, "%s\n", cmd) < 0) {
     perror("send command failed");
   }
@@ -72,7 +72,7 @@ char* read_response(bot_interface_t* bot_iface, char* buffer, size_t size) {
     perror("read response failed");
     exit(-1);
   }
-  fprintf(stdout, "[BOT %s TO GUI] %s", bot_iface->name, buffer);
+  if (!quiet_mode) fprintf(stdout, "[BOT %s TO GUI] %s", bot_iface->name, buffer);
   return buffer;
 }
 

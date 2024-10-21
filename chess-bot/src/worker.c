@@ -20,9 +20,11 @@ void* worker_start(void* arg) {
   worker_t* worker = (worker_t*)arg;
   bot_t* bot = worker->bot;
 
+
   copy_position(&worker->position, &bot->root_position);
   worker->move_count = generate_legal_moves(&worker->position, worker->moves);
   
+  worker->root_ply = worker->position.ply_counter;
 
   while (!stop(worker)) {
     rootSearch(worker, MIN_SCORE, MAX_SCORE, bot->depth_searched);
