@@ -1,9 +1,8 @@
-#include "../include/static-exchange-evaluation.h"
-
 #include "../../chess-lib/include/chess-lib.h"
 #include "../../chess-lib/include/private/chess-lib-internals.h"
 #include "../include/bot.h"
-#include "../include/static-evaluation.h"
+#include "../include/eval.h"
+#include "../include/static-exchange-evaluation.h"
 
 void add_attacker(attacker_list_t* attackers, sq0x88_t square,
                   score_cp_t piece_value) {
@@ -25,37 +24,31 @@ void generate_attackers(const chess_state_t* chess_state,
   pawn_square = to - chess_state->up_increment + 1;
   if (pawn_square != from && piece(chess_state, pawn_square) ==
                                  (PAWN | chess_state->friendly_colour)) {
-    add_attacker(attackers, pawn_square,
-                 pawn_value(pawn_square, chess_state->friendly_colour));
+    add_attacker(attackers, pawn_square, PAWN_VALUE);
   }
   pawn_square = to - chess_state->up_increment + 1;
   if (pawn_square != from && piece(chess_state, pawn_square) ==
                                  (PAWN | chess_state->friendly_colour)) {
-    add_attacker(attackers, pawn_square,
-                 pawn_value(pawn_square, chess_state->friendly_colour));
+    add_attacker(attackers, pawn_square, PAWN_VALUE);
   }
   pawn_square = to - chess_state->down_increment + 1;
   if (piece(chess_state, pawn_square) == (PAWN | chess_state->enemy_colour)) {
-    add_attacker(attackers, pawn_square,
-                 pawn_value(pawn_square, chess_state->enemy_colour));
+    add_attacker(attackers, pawn_square, PAWN_VALUE);
   }
   pawn_square = to - chess_state->down_increment + 1;
   if (piece(chess_state, pawn_square) == (PAWN | chess_state->enemy_colour)) {
-    add_attacker(attackers, pawn_square,
-                 pawn_value(pawn_square, chess_state->enemy_colour));
+    add_attacker(attackers, pawn_square, PAWN_VALUE);
   }
   // knights
   for (int i = 0; i < chess_state->friendly_pieces->knight_count; i++) {
     sq0x88_t knight_square = chess_state->friendly_pieces->knight_list[i];
     if (knight_square != from && !knight_increment(knight_square, to)) continue;
-    add_attacker(attackers, knight_square,
-                 knight_value(pawn_square, chess_state->friendly_colour));
+    add_attacker(attackers, knight_square, KNIGHT_VALUE);
   }
   for (int i = 0; i < chess_state->enemy_pieces->knight_count; i++) {
     sq0x88_t knight_square = chess_state->enemy_pieces->knight_list[i];
     if (!knight_increment(knight_square, to)) continue;
-    add_attacker(defenders, knight_square,
-                 knight_value(pawn_square, chess_state->enemy_colour));
+    add_attacker(defenders, knight_square, KNIGHT_VALUE);
   }
   // bishops
   for (int i = 0; i < bishop_increments_count; i++) {
@@ -71,10 +64,15 @@ void generate_attackers(const chess_state_t* chess_state,
     if (!(p & BISHOP)) continue;
 
     if (p & chess_state->friendly_colour) {
-      add_attacker(attackers, square, piece_value(square, p));
-
+      score_centipawn_t value;
+      if ((p & PIECE_MASK) == BISHOP) value = BISHOP_VALUE;
+      if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
+      add_attacker(attackers, square, value);
     } else {
-      add_attacker(attackers, square, piece_value(square, p));
+      score_centipawn_t value;
+      if ((p & PIECE_MASK) == BISHOP) value = BISHOP_VALUE;
+      if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
+      add_attacker(defenders, square, value);
     }
   }
   // rooks
@@ -90,8 +88,15 @@ void generate_attackers(const chess_state_t* chess_state,
     if (!(p & ROOK)) continue;
 
     if (p & chess_state->friendly_colour) {
+      score_cp_t value;
+      if ((p & PIECE_MASK) == ROOK_VALUE) value = ROOK_VALUE;
+      if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
+
       add_attacker(attackers, square, piece_value(square, p));
     } else {
+      score_cp_t value;
+      if ((p & PIECE_MASK) == ROOK_VALUE) value = ROOK_VALUE;
+      if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
       add_attacker(defenders, square, piece_value(square, p));
     }
   }
@@ -100,20 +105,18 @@ void generate_attackers(const chess_state_t* chess_state,
   sq0x88_t king_square;
   king_square = chess_state->friendly_pieces->king_square;
   if (king_increment(king_square, to)) {
-    add_attacker(attackers, king_square,
-                 king_value(king_square, chess_state->friendly_colour));
+    add_attacker(attackers, king_square, KING_VALUE);
   }
   king_square = chess_state->enemy_pieces->king_square;
   if (king_increment(king_square, to)) {
-    add_attacker(defenders, king_square,
-                 king_value(king_square, chess_state->enemy_colour));
+    add_attacker(defenders, king_square, KING_VALUE);
   }
 }
 
 void update_xray_attackers(const chess_state_t* chess_state,
-                          attacker_list_t* attackers,
-                          attacker_list_t* defenders, sq0x88_t from,
-                          sq0x88_t to) {
+                           attacker_list_t* attackers,
+                           attacker_list_t* defenders, sq0x88_t from,
+                           sq0x88_t to) {
   sq0x88_t inc = queen_increment(from, to);
   if (!inc) return;
   sq0x88_t square = forwards_ray_cast(chess_state, from, inc);
@@ -148,7 +151,7 @@ attacker_t next_attacker(attacker_list_t* attackers) {
 }
 
 score_cp_t static_exchange_evaluation(const chess_state_t* chess_state,
-                                             move_t move) {
+                                      move_t move) {
   score_cp_t alpha, beta;
   score_cp_t value, value_attacker;
   attacker_t next;
@@ -170,7 +173,6 @@ score_cp_t static_exchange_evaluation(const chess_state_t* chess_state,
   if (piece(chess_state, from) & KING) return alpha;
   value_attacker = next.value;
   for (;;) {
-
     value -= value_attacker;
     if (value >= beta) return beta;
     if (value > alpha) alpha = value;
