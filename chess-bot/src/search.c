@@ -1,6 +1,8 @@
 #include "../include/search.h"
-#include "../include/eval.h"
+
 #include "../include/bot.h"
+#include "../include/eval.h"
+#include "../include/see.h"
 
 int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   // aliasing thread data
@@ -21,16 +23,16 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   if (first_move_score > alpha) {
     if (first_move_score >= beta) {
       printf("FAILED HIGH\n");
-        return 1;
+      return 1;
     }
     alpha = first_move_score;
   }
 
   for (size_t i = 1; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
-    
+
     score_cp_t score = -abSearch(worker, MIN_SCORE, MAX_SCORE, depth - 1);
-    //printf("%d %d\n", alpha, score);
+    // printf("%d %d\n", alpha, score);
     unmake_move(position);
     worker->scores[i] = score;
 
@@ -59,18 +61,18 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
       }
     }
   }
-  //for (int i = 0; i < move_count; i++) {
-  //  char buffer[8];
-  //  write_long_algebraic_notation(buffer, sizeof(buffer) , worker->moves[i]);
-  //  printf("%s:%03d,", buffer,worker->scores[i]);
-  //}
-  //  printf("\n");
-    
+  // for (int i = 0; i < move_count; i++) {
+  //   char buffer[8];
+  //   write_long_algebraic_notation(buffer, sizeof(buffer) , worker->moves[i]);
+  //   printf("%s:%03d,", buffer,worker->scores[i]);
+  // }
+  //   printf("\n");
 
   return 0;
 }
 
-score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
+score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
+                    int depth) {
   // aliasing thread data
   chess_state_t* position = &worker->position;
 
@@ -79,9 +81,9 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   }
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
-  if (is_draw_by_50_move_rule(position)
-   || is_draw_by_insufficient_material(position)
-   || is_repetition(position, worker->root_ply)) {
+  if (is_draw_by_50_move_rule(position) ||
+      is_draw_by_insufficient_material(position) ||
+      is_repetition(position, worker->root_ply)) {
     return DRAW_SCORE_CENTIPAWNS;
   }
 
@@ -100,7 +102,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   make_move(position, best_move);
   score_cp_t best_score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
-  
+
   if (best_score > alpha) {
     if (best_score >= beta) {
       return best_score;
@@ -129,7 +131,8 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   return best_score;
 }
 
-score_cp_t  qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
+score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
+                   int depth) {
   chess_state_t* position = &worker->position;
 
   if (is_check(position)) {
@@ -166,7 +169,8 @@ score_cp_t  qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int dep
   score_cp_t best_score = stand_pat;
 
   for (int i = 0; i < move_count; i++) {
-    if (!is_capture(moves[i]) && !is_promotion(moves[i])) {
+    if (!is_capture(moves[i]) && !is_promotion(moves[i]) &&
+        static_exchange_evaluation(position, moves[i]) >= 0) {
       continue;
     }
 
