@@ -41,4 +41,6 @@ score_centipawn_t king_value(sq0x88_t square, piece_t colour);
 
 score_cp_t eval(const chess_state_t* position);
 
+int is_repetition(const chess_state_t* position, int ply_of_root);
+
 #endif

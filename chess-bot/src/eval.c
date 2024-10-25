@@ -58,10 +58,10 @@ int is_repetition(const chess_state_t* chess_state, int ply_of_root) {
   int repetitions = 1;
   for (int i = chess_state->ply_counter - 2;
        i >= chess_state->ply_of_last_irreversible_move; i -= 2) {
-    if (i >= ply_of_root) {
-      return 1;
-    }
     if (chess_state->ply_stack[i].zobrist == current_zobrist) {
+      if (i >= ply_of_root) {
+        return 1;
+      }
       repetitions++;
     }
   }
