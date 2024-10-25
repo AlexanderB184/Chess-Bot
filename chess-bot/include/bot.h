@@ -106,16 +106,13 @@ typedef struct {
 int bot_init(bot_t* bot, bot_settings_t* settings);
 
 // loads the fen string into position
-int bot_load_fen(bot_t* bot, char* postext);
+int bot_load_fen(bot_t* bot, const char* postext);
 
 // loads the moves into position
-int bot_load_moves(bot_t* bot, char* movetext);
+int bot_load_moves(bot_t* bot, const char* movetext);
 
 // starts the bot
 int bot_start(bot_t* bot);
-
-// starts the bot pondering
-int bot_ponder(bot_t* bot);
 
 // converts the ponder search into regular searching
 int bot_ponder_hit(bot_t* bot);
