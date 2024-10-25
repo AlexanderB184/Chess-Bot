@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "../chess-lib/include/chess-lib.h"
-#include "../chess-lib/include/perft.h"
+#include "../include/chess-lib.h"
+#include "../include/perft.h"
 
 static chess_state_t chess_state;
 

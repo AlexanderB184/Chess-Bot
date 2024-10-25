@@ -3,47 +3,78 @@
 
 #include "../include/chess-lib.h"
 #include "../include/private/chess-lib-internals.h"
-int is_legal_enpassent(const chess_state_t* chess_state, move_t move) {
+
+int is_pinned(const chess_state_t* chess_state, move_t move) {
+  sq0x88_t from = get_from(move);
+  sq0x88_t to = get_to(move);
+  sq0x88_t king_square = chess_state->friendly_pieces->king_square;
+  // checking moved piece is not pinned
+  sq0x88_t inc = queen_increment(king_square, from);
+   // piece is not aligned with king
+  if (inc == 0) return 0;
+   // piece is on same line with king
+  if (inc == queen_increment(king_square, to)) return 0;
+   // piece between moved piece and king
+  if (forwards_ray_cast(chess_state, king_square, inc) != from) return 0;
+  // find potential pinning piece
+  sq0x88_t pinning_square = forwards_ray_cast(chess_state, from, inc);
+  if (off_the_board(pinning_square) ||
+      piece_is_friendly(chess_state, pinning_square))
+    return 0;
+  // only sliding pieces can pin
+  if (((piece(chess_state, pinning_square) & BISHOP) &&
+       bishop_increment(king_square, pinning_square)) ||
+      ((piece(chess_state, pinning_square) & ROOK) &&
+       rook_increment(king_square, pinning_square))) {
+    return 1;
+  }
+  return 0;
+}
+
+int is_pinned_enpassent(const chess_state_t* chess_state, move_t move) {
   sq0x88_t from = get_from(move);
   sq0x88_t king_square = chess_state->friendly_pieces->king_square;
   sq0x88_t inc;
 
   inc = bishop_increment(king_square, enpassent_target(chess_state) - chess_state->up_increment);
   sq0x88_t captured_pawn = enpassent_target(chess_state) - chess_state->up_increment;
+  // bishop pin
   if (inc) {
     if (forwards_ray_cast(chess_state, king_square, inc) !=
-        enpassent_target(chess_state))
-      return 1;
+        captured_pawn)
+      return 0;
 
     sq0x88_t pinning_square =
         forwards_ray_cast(chess_state, captured_pawn, inc);
 
     if (off_the_board(pinning_square) ||
         piece_is_friendly(chess_state, pinning_square))
-      return 1;
+      return 0;
 
-    if (piece(chess_state, pinning_square) & BISHOP) return 0;
+    if (piece(chess_state, pinning_square) & BISHOP) return 1;
 
-  } else {
-    inc = rook_increment(king_square, captured_pawn);
-
-    if (inc == 0) return 1;
-
-    if (inc != rook_increment(king_square, from)) return 1;
-
-    sq0x88_t square = forwards_ray_cast(chess_state, king_square, inc);
-
-    if (square != captured_pawn && square != from) return 1;
-
-    square = forwards_ray_cast(chess_state, square + inc, inc);
-
-    if (off_the_board(square) || piece_is_friendly(chess_state, square))
-      return 1;
-
-    if (piece(chess_state, square) & ROOK) return 0;
+    return 0;
   }
+    
+  inc = rook_increment(king_square, captured_pawn);
 
-  return 1;
+  if (inc == 0) return 0;
+
+  if (inc != rook_increment(king_square, from)) return 0;
+
+  sq0x88_t square = forwards_ray_cast(chess_state, king_square, inc);
+
+  if (square != captured_pawn && square != from) return 0;
+
+  square = forwards_ray_cast(chess_state, square + inc, inc);
+
+  if (off_the_board(square) || piece_is_friendly(chess_state, square))
+    return 0;
+
+  if (piece(chess_state, square) & ROOK) return 1;
+  
+
+  return 0;
 }
 
 void trace_ply_stack(const chess_state_t* chess_state) {
@@ -67,19 +98,22 @@ int is_legal(const chess_state_t* chess_state, move_t move) {
 
   if (from == king_square) {  // king moves
     if (under_attack(chess_state, to, chess_state->enemy_colour)) return 0;
-    if (get_flags(move) == QUEEN_CASTLE) {
+    if (is_queen_castle(move)) {
       if (under_attack(chess_state, from - 1, chess_state->enemy_colour))
         return 0;
     }
-    if (get_flags(move) == KING_CASTLE) {
+    if (is_king_castle(move)) {
       if (under_attack(chess_state, from + 1, chess_state->enemy_colour))
         return 0;
     }
     return 1;
   }
-  if (get_flags(move) == ENPASSENT) {
-    if (!is_legal_enpassent(chess_state, move)) return 0;
+  if (is_enpassent(move)) {
+    if (is_pinned_enpassent(chess_state, move)) return 0;
   }
+  (void)inc;
+  return !is_pinned(chess_state, move);
+  /*
   // checking moved piece is not pinned
   inc = queen_increment(king_square, from);
   if (inc == 0) return 1;
@@ -96,5 +130,5 @@ int is_legal(const chess_state_t* chess_state, move_t move) {
        rook_increment(king_square, pinning_square))) {
     return 0;
   }
-  return 1;
+  return 1;*/
 }

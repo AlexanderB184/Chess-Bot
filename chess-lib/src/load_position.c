@@ -177,7 +177,7 @@ long load_position(chess_state_t* chess_state, const char* buffer) {
     int out = read_square(buffer + bytes_read, size - bytes_read, &chess_state->enpassent_target);
     if (out == -1) return -1;
     bytes_read += out;
-    if (sq0x88_to_rank07(chess_state->enpassent_target) != 3 && sq0x88_to_rank07(chess_state->enpassent_target) != 4) {
+    if (sq0x88_to_rank07(chess_state->enpassent_target) != 2 && sq0x88_to_rank07(chess_state->enpassent_target) != 5) {
       READ_ERROR("fen contains invalid enpassent target.\n");
     }
   }
@@ -210,4 +210,110 @@ long load_position(chess_state_t* chess_state, const char* buffer) {
   init_check(chess_state);
   init_ply_stack(chess_state);
   return bytes_read;
+}
+
+// @todo correctly handle reaching end of buffer, correctly handle errors
+long save_position(const chess_state_t* chess_state, char* buffer, long size) {
+  // save piece table
+  long bytes_written = 0;
+  for (rank07_t r = 7; r >= 0; r--) {
+    int empties = 0;
+    for (file07_t f = 0; f < 8; f++) {
+      piece_t p = piece(chess_state, rankfile_to_sq0x88(r, f));
+      if (p == EMPTY) {
+        empties++;
+        continue;
+      }
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      if (empties > 0) {
+        buffer[bytes_written++] = empties + '0';
+        empties = 0;
+      }
+      switch (p) {
+        case WHITE_PAWN:   buffer[bytes_written++] = 'P'; break;
+        case WHITE_KNIGHT: buffer[bytes_written++] = 'N'; break;
+        case WHITE_BISHOP: buffer[bytes_written++] = 'B'; break;
+        case WHITE_ROOK:   buffer[bytes_written++] = 'R'; break;
+        case WHITE_QUEEN:  buffer[bytes_written++] = 'Q'; break;
+        case WHITE_KING:   buffer[bytes_written++] = 'K'; break;
+        case BLACK_PAWN:   buffer[bytes_written++] = 'p'; break;
+        case BLACK_KNIGHT: buffer[bytes_written++] = 'n'; break;
+        case BLACK_BISHOP: buffer[bytes_written++] = 'b'; break;
+        case BLACK_ROOK:   buffer[bytes_written++] = 'r'; break;
+        case BLACK_QUEEN:  buffer[bytes_written++] = 'q'; break;
+        case BLACK_KING:   buffer[bytes_written++] = 'k'; break;
+        default: WRITE_ERROR("unexpected piece type %02x", p);
+      }
+    }
+    if (empties > 0) {
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      buffer[bytes_written++] = empties + '0';
+      empties = 0;
+    }
+    if (r != 0) {
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      buffer[bytes_written++] = '/';
+    }
+  }
+  if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+  buffer[bytes_written++] = ' ';
+
+  // player to move
+  if (bytes_written + 2 >= size) WRITE_ERROR("insufficient space in buffer");
+  buffer[bytes_written++] = chess_state->black_to_move ? 'b' : 'w';
+  buffer[bytes_written++] = ' ';
+
+  // castle rights
+  if (chess_state->castle_rights == NO_RIGHTS) {
+    if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+    buffer[bytes_written++] = '-';
+  } else {
+    if (chess_state->castle_rights & WHITE_KING_SIDE) {
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      buffer[bytes_written++] = 'K';
+    }
+    if (chess_state->castle_rights & WHITE_QUEEN_SIDE) {
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      buffer[bytes_written++] = 'Q';
+    }
+    if (chess_state->castle_rights & BLACK_KING_SIDE) {
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      buffer[bytes_written++] = 'k';
+    }
+    if (chess_state->castle_rights & BLACK_QUEEN_SIDE) {
+      if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+      buffer[bytes_written++] = 'q';
+    }
+  }
+  if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+  buffer[bytes_written++] = ' ';
+
+  // enpassent
+  if (!off_the_board(enpassent_target(chess_state))) {
+    long out = write_square(buffer + bytes_written, size - bytes_written, enpassent_target(chess_state));
+    if (out == -1) return -1;
+  } else {
+    if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+    buffer[bytes_written++] = '-';
+  }
+  if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
+  buffer[bytes_written++] = ' ';
+
+  // half move clock
+  // full move count
+  long out = snprintf(
+    buffer + bytes_written, 
+    size - bytes_written, 
+    "%d %d", 
+    chess_state->half_move_clock / 2, 
+    chess_state->ply_counter / 2
+  );
+  if (out > size - bytes_written) {
+    WRITE_ERROR("insufficient space in buffer");
+  }
+  bytes_written += out;
+
+  return bytes_written;
+
+
 }

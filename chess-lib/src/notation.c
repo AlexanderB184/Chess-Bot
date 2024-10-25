@@ -548,6 +548,7 @@ long write_long_algebraic_notation(char* buffer, size_t buffer_size,
   return bytes_read;
 }
 
+// @todo add validation
 long read_long_algebraic_notation(const char* buffer, size_t buffer_size,
                                   const chess_state_t* chess_state,
                                   move_t* read_move) {

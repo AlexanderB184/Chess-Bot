@@ -29,6 +29,7 @@ typedef struct bot_settings_t{
   int debug; // debug flag
   int Hash; // size of transposition table in MB
   int Ponder; // whether pondering is enabled
+  // other settings ...
 } bot_settings_t;
 
 typedef struct bot_term_cond_t{

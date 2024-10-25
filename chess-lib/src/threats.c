@@ -10,11 +10,14 @@ void update_discover_check(chess_state_t* chess_state, sq0x88_t king_square,
                            sq0x88_t revealing_piece_to) {
   sq0x88_t inc = queen_increment(revealing_piece_from, king_square);
   if (!inc) return;
+  // check if piece is still in the same "line" with the King as before
   if (inc == queen_increment(revealing_piece_to, king_square)) return;
 
+  // if another piece is between this piece and the king it is not a reveal
   if (forwards_ray_cast(chess_state, revealing_piece_from, inc) != king_square)
     return;
 
+  // get the piece that is revealed (if one exists)
   piece_t revealed_square =
       backwards_ray_cast(chess_state, revealing_piece_from, inc);
 
@@ -23,7 +26,7 @@ void update_discover_check(chess_state_t* chess_state, sq0x88_t king_square,
     return;
 
   piece_t revealed_piece = piece(chess_state, revealed_square);
-
+  // check piece can move to the king square
   if (!((revealed_piece & BISHOP) &&
         bishop_increment(revealed_square, king_square)) &&
       !((revealed_piece & ROOK) &&
@@ -34,6 +37,11 @@ void update_discover_check(chess_state_t* chess_state, sq0x88_t king_square,
   chess_state->n_checks += 1;
   chess_state->discovered_check = 1;
 }
+
+// initialize variables
+// if move is castle, check if moved rook is checking opposing king
+// check if the moved piece can move to the kingsquare
+// check if the moved piece was obstructing a sliding piece which is now revealed
 
 void update_check(chess_state_t* chess_state, move_t move) {
   sq0x88_t king_square;
@@ -51,7 +59,7 @@ void update_check(chess_state_t* chess_state, move_t move) {
   sq0x88_t to = get_to(move);
   sq0x88_t from = get_from(move);
 
-  if (get_flags(move) == QUEEN_CASTLE) {
+  if (is_queen_castle(move)) {
     sq0x88_t rook_moved_to = to + (sq0x88_t)1;
     sq0x88_t inc = rook_increment(rook_moved_to, king_square);
     if (inc &&
@@ -60,7 +68,7 @@ void update_check(chess_state_t* chess_state, move_t move) {
       chess_state->n_checks++;
     }
   }
-  if (get_flags(move) == KING_CASTLE) {
+  if (is_king_castle(move)) {
     sq0x88_t rook_moved_to = to - (sq0x88_t)1;
     sq0x88_t inc = rook_increment(rook_moved_to, king_square);
     if (inc &&
@@ -69,14 +77,15 @@ void update_check(chess_state_t* chess_state, move_t move) {
       chess_state->n_checks++;
     }
   }
-
-  if (moved_piece & BISHOP) {
+  // if moved piece has bishop flag set, i.e. it is a bishop or queen
+  if (moved_piece & BISHOP) { // <- maybe should be an API for this to abstract it
     sq0x88_t inc = bishop_increment(to, king_square);
     if (inc && forwards_ray_cast(chess_state, to, inc) == king_square) {
       chess_state->check_square = to;
       chess_state->n_checks++;
     }
   }
+  // if moved piece has rook flag set, i.e. it is a bishop or queen
   if (moved_piece & ROOK) {
     sq0x88_t inc = rook_increment(to, king_square);
     if (inc && forwards_ray_cast(chess_state, to, inc) == king_square) {
@@ -102,7 +111,7 @@ void update_check(chess_state_t* chess_state, move_t move) {
   // consider reveals
   update_discover_check(chess_state, king_square, from, to);
 
-  if ((moved_piece & PAWN) && get_flags(move) == ENPASSENT) {
+  if (is_enpassent(move)) {
     update_discover_check(chess_state, king_square, to - pawn_inc, to);
   }
 }
@@ -255,15 +264,15 @@ void init_check(chess_state_t* chess_state) {
   }
 
   // pawn captures
-  sq0x88_t inc = chess_state->up_increment;
+  sq0x88_t inc = chess_state->down_increment;
   sq0x88_t from;
-  from = king_square - inc + (sq0x88_t)1;
+  from = king_square - inc + 1;
   if (!off_the_board(from) &&
       piece(chess_state, from) == (opposing_player | PAWN)) {
     chess_state->check_square = from;
     chess_state->n_checks++;
   }
-  from = king_square - inc - (sq0x88_t)1;
+  from = king_square - inc - 1;
   if (!off_the_board(from) &&
       piece(chess_state, from) == (opposing_player | PAWN)) {
     chess_state->check_square = from;

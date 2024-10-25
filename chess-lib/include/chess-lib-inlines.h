@@ -81,6 +81,10 @@ static inline int piece_is_enemy(const chess_state_t* chess_state, sq0x88_t squa
   return chess_state->board[square] & chess_state->enemy_colour;
 }
 
+static inline int piece_is_empty(const chess_state_t* chess_state, sq0x88_t square) {
+  return chess_state->board[square] == EMPTY;
+}
+
 static inline sq0x88_t enpassent_target(const chess_state_t* chess_state) {
   return chess_state->enpassent_target;
 }

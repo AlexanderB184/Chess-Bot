@@ -25,7 +25,6 @@ sq0x88_t backwards_ray_cast(const chess_state_t* chess_state, sq0x88_t from,
   sq0x88_t next;
   for (next = from - inc; piece(chess_state, next) == EMPTY; next -= inc);
   return next;
-  return 0;
 }
 
 sq0x88_t forwards_ray_cast(const chess_state_t* chess_state, sq0x88_t from,
