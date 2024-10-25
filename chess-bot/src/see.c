@@ -2,8 +2,9 @@
 #include "../../chess-lib/include/private/chess-lib-internals.h"
 #include "../include/bot.h"
 #include "../include/eval.h"
-#include "../include/static-exchange-evaluation.h"
+#include "../include/see.h"
 
+/*
 void add_attacker(attacker_list_t* attackers, sq0x88_t square,
                   score_cp_t piece_value) {
   attackers->pieces[attackers->piece_count++] =
@@ -200,3 +201,4 @@ score_cp_t static_exchange_evaluation(const chess_state_t* chess_state,
   if (value > beta) return beta;
   return value;
 }
+*/

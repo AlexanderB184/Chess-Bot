@@ -36,6 +36,17 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     unmake_move(position);
     worker->scores[i] = score;
 
+    for (int j = i; j > 0; j--) {
+      if (worker->scores[j - 1] >= worker->scores[j]) break;
+      score_cp_t tscore = worker->scores[j - 1];
+      worker->scores[j - 1] = worker->scores[j];
+      worker->scores[j] = tscore;
+
+      move_t tmove = worker->moves[j - 1];
+      worker->moves[j - 1] = worker->moves[j];
+      worker->moves[j] = tmove;
+    }
+
     if (score >= beta) {
       printf("FAILED HIGH\n");
       return 1;
@@ -46,21 +57,6 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     }
   }
 
-  for (int i = 1; i < move_count; i++) {
-    for (int j = i; j > 0; j--) {
-      if (worker->scores[j - 1] < worker->scores[j]) {
-        score_cp_t tscore = worker->scores[j - 1];
-        worker->scores[j - 1] = worker->scores[j];
-        worker->scores[j] = tscore;
-
-        move_t tmove = worker->moves[j - 1];
-        worker->moves[j - 1] = worker->moves[j];
-        worker->moves[j] = tmove;
-      } else {
-        break;
-      }
-    }
-  }
   // for (int i = 0; i < move_count; i++) {
   //   char buffer[8];
   //   write_long_algebraic_notation(buffer, sizeof(buffer) , worker->moves[i]);
@@ -76,10 +72,11 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   // aliasing thread data
   chess_state_t* position = &worker->position;
 
-  if (depth <= 0 && !is_check(position)) {
-    return qSearch(worker, alpha, beta, depth);
-  }
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
+
+  if (depth <= 0 && !is_check(position)) {
+    return eval(position);//qSearch(worker, alpha, beta, depth);
+  }
 
   if (is_draw_by_50_move_rule(position) ||
       is_draw_by_insufficient_material(position) ||
@@ -130,7 +127,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
 
   return best_score;
 }
-
+/*
 score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
                    int depth) {
   chess_state_t* position = &worker->position;
@@ -191,4 +188,4 @@ score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   }
 
   return best_score;
-}
+}*/
