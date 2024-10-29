@@ -1,8 +1,10 @@
+
 #ifndef TRANSPOSITION_TABLE_H
 #define TRANSPOSITION_TABLE_H
 
+#include <stdlib.h>
+
 #include "../../chess-lib/include/chess-lib.h"
-#include "../include/bot.h"
 
 enum tt_entry_type { TT_EMPTY = 0, TT_EXACT, TT_UPPER, TT_LOWER };
 
@@ -32,6 +34,8 @@ typedef struct table_t {
   volatile struct key_entry_pair_t* items;
   uint64_t capacity;
 } table_t;
+
+#include "bot.h"
 
 move_t entry_best_move(entry_t entry);
 score_cp_t entry_score(entry_t entry);

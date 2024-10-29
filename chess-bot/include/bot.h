@@ -1,3 +1,4 @@
+
 #ifndef BOT_H
 #define BOT_H
 
@@ -8,7 +9,6 @@
 #include <time.h>
 
 #include "../../chess-lib/include/chess-lib.h"
-#include "../include/transposition_table.h"
 
 #define CHECKMATE_SCORE_CENTIPAWNS (score_cp_t)(-16384)
 #define STALEMATE_SCORE_CENTIPAWNS (score_cp_t)(0)
@@ -18,29 +18,29 @@
 
 typedef int16_t score_cp_t;
 
+#include "transposition_table.h"
+
 struct match_state_t;
 struct bot_settings_t;
 struct bot_term_cond_t;
 struct bot_t;
 struct worker_t;
 
-
-
-typedef struct bot_settings_t{
-  int debug; // debug flag
-  int Hash; // size of transposition table in MB
-  int Ponder; // whether pondering is enabled
+typedef struct bot_settings_t {
+  int debug;   // debug flag
+  int Hash;    // size of transposition table in MB
+  int Ponder;  // whether pondering is enabled
   // other settings ...
 } bot_settings_t;
 
-typedef struct bot_term_cond_t{
-    size_t time_limit_ms;
-    size_t node_limit_nds;
-    size_t depth_limit_ply;
-    size_t mate_in_ply;
+typedef struct bot_term_cond_t {
+  size_t time_limit_ms;
+  size_t node_limit_nds;
+  size_t depth_limit_ply;
+  size_t mate_in_ply;
 } bot_term_cond_t;
 
-typedef struct match_state_t{
+typedef struct match_state_t {
   // time control info
   size_t wtime;
   size_t btime;
@@ -49,12 +49,16 @@ typedef struct match_state_t{
 } match_state_t;
 
 typedef struct bot_t {
-  int n_threads; // number of threads to use
+  int n_threads;  // number of threads to use
   struct worker_t** workers;
 
   struct bot_settings_t settings;
 
-  enum {SEARCHMODE_INACTIVE, SEARCHMODE_REGULAR, SEARCHMODE_PONDER} search_mode; // inactive=0, regular=1, ponder=2
+  enum {
+    SEARCHMODE_INACTIVE,
+    SEARCHMODE_REGULAR,
+    SEARCHMODE_PONDER
+  } search_mode;  // inactive=0, regular=1, ponder=2
 
   // state
   atomic_bool running, abort;
@@ -100,7 +104,6 @@ typedef struct {
   int depth_searched;
 } root_move_t;
 */
-
 
 // initialises the bot with settings,
 // if settings is null it uses default settings
