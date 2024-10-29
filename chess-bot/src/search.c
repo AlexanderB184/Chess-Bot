@@ -71,6 +71,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
                     int depth) {
   // aliasing thread data
   chess_state_t* position = &worker->position;
+  table_t* table = &worker->bot->transpostion_table;
 
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
@@ -95,6 +96,13 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     }
   }
 
+  entry_t tt_entry = tt_get(table, position->zobrist);
+  if (tt_entry) {
+    if (entry_depth(tt_entry) >= depth) {
+      return entry_score(tt_entry);
+    }
+  }
+
   move_t best_move = moves[0];
   make_move(position, best_move);
   score_cp_t best_score = -abSearch(worker, -beta, -alpha, depth - 1);
@@ -113,6 +121,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     unmake_move(position);
 
     if (score >= beta) {
+      tt_store(table, position->zobrist, TT_UPPER, moves[i], score, depth, 0);
       return score;
     }
 
@@ -124,7 +133,8 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
       }
     }
   }
-
+  enum tt_entry_type entry_type = (best_score > alpha) ? TT_EXACT : TT_LOWER;
+  tt_store(table, position->zobrist, entry_type, best_move, best_score, depth, 0);
   return best_score;
 }
 /*
