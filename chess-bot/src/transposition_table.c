@@ -1,48 +1,79 @@
-#include "../../chess-lib/include/chess-lib.h"
-#include "../include/bot.h"
+#include "../include/transposition_table.h"
 
-typedef struct table_data_t {
-    score_cp_t score; //16 bit
-    uint16_t move; // 16 bit
-    int8_t depth;
-    uint8_t type;
-    int16_t padding;
-} table_data_t;
+// layout
+// 0..2 type
+// 2..16 unused
+// 16..24 age
+// 24..32 depth
+// 32..48 score
+// 48..64 best move
 
-typedef struct slot_t {
-    zobrist_t key;
-    table_data_t data;
-} slot_t;
+move_t entry_best_move(entry_t entry) {
+  uint16_t compressed_move = ((entry >> 48) & 0xFFFF);
+  return move(compressed_move & 0x3F, ((compressed_move >> 6) & 0x3F),
+              ((compressed_move >> 12) & 0xF));
+}
 
-typedef struct table_t {
-    struct slot_t* items;
-    uint64_t capacity;
-} table_t;
+score_cp_t entry_score(entry_t entry) {
+  return (score_cp_t)((entry >> 32) & 0xFFFF);
+}
+
+enum tt_entry_type entry_type(entry_t entry) {
+  return (enum tt_entry_type)(entry & 0b11);
+}
+
+int entry_depth(entry_t entry) { return (int)((entry >> 16) & 0xFF); }
+
+int entry_age(entry_t entry) { return (int)((entry >> 24) & 0xFF); }
+
+entry_t make_entry(enum tt_entry_type type, move_t best_move, score_cp_t score,
+                   int depth, int age) {
+  return (entry_t)((type & 0b11) | ((age & 0xFF) << 16) |
+                   ((depth & 0xFF) << 24) | ((score & 0xFFFF) << 32) |
+                   (((best_move.from & 0x3F) | ((best_move.to & 0x3F) << 6) |
+                     ((best_move.bitpacked_data & 0xF) << 12))
+                    << 48));
+}
 
 void tt_init(table_t* table, uint64_t capacity) {
-    table->items = calloc(capacity * sizeof(slot_t));
-    table->capacity = capacity;
+  table->items = calloc(capacity * sizeof(key_entry_pair_t));
+  table->capacity = capacity;
 }
 
-void tt_free(table_t* table) {
-    free(table->items);
-}
+void tt_free(table_t* table) { free(table->items); }
 
-table_data_t tt_get(table_t* table, zobrist_t key) {
-    if (table->items[key % table->capacity].key == key) {
-        return table->items[key % table->capacity].data;
+entry_t tt_get(table_t* table, zobrist_t key) {
+    uint64_t index = key % table->capacity;
+    zobrist_t stored_key = table->items[index].key;
+    uint64_t stored_entry = table->items[index].entry;
+    if (stored_key ^ stored_entry == key) {
+        return stored_entry;
     }
-    return (table_data_t){0,};
+    return (entry_t)0;
 }
 
-void tt_store_always_replace(table_t* table, zobrist_t key, table_data_t data) {
-    table->items[key % table->capacity].key = key;
-    table->items[key % table->capacity].data = data;
+void tt_store(table_t* table, zobrist_t key, enum tt_entry_type type, move_t best_move, score_cp_t score, int depth, int age) {
+    uint64_t index = key % table->capacity;
+    entry_t entry = make_entry(type, best_move, score, depth, age);
+    table->items[index].key = key ^ entry;
+    table->items[index].entry = entry;
 }
 
-void tt_store_depth_prefered(table_t* table, zobrist_t key, table_data_t data) {
-    if (data.depth >= table->items[key % table->capacity].data.depth) {
-        table->items[key % table->capacity].key = key;
-        table->items[key % table->capacity].data = data;
+void tt_store_depth_prefered(table_t* table, zobrist_t key, enum tt_entry_type type, move_t best_move, score_cp_t score, int depth, int age) {
+    uint64_t index = key % table->capacity;
+    uint64_t stored_entry = table->items[index].entry;
+    if (entry_depth(stored_entry) <= depth) {
+        entry_t entry = make_entry(type, best_move, score, depth, age);
+        table->items[index].key = key ^ entry;
+        table->items[index].entry = entry;
+    }
+}
+
+void tt_store_pv(table_t* table, zobrist_t key, enum tt_entry_type type, move_t best_move, score_cp_t score, int depth, int age) {
+    if (type == TT_EXACT) {
+        uint64_t index = key % table->capacity;
+        entry_t entry = make_entry(type, best_move, score, depth, age);
+        table->items[index].key = key ^ entry;
+        table->items[index].entry = entry;
     }
 }

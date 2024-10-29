@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "../../chess-lib/include/chess-lib.h"
+#include "../include/transposition_table.h"
 
 #define CHECKMATE_SCORE_CENTIPAWNS (score_cp_t)(-16384)
 #define STALEMATE_SCORE_CENTIPAWNS (score_cp_t)(0)
@@ -72,7 +73,7 @@ typedef struct bot_t {
   chess_state_t root_position;
 
   // shared structures
-  void* transpostion_table;
+  table_t transpostion_table;
 } bot_t;
 
 //

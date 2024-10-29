@@ -33,6 +33,7 @@ int bot_init(bot_t* bot, bot_settings_t* settings) {
         .Ponder = BOT_CAN_PONDER_DEFAULT,
     };
   }
+  tt_init(&bot->transpostion_table, bot->settings.Hash * (1024 * 1024));
   bot->workers = calloc(bot->n_threads, sizeof(worker_t*));
   for (int id = 0; id < bot->n_threads; id++) {
     bot->workers[id] = calloc(1, sizeof(worker_t));
@@ -124,6 +125,7 @@ int bot_release(bot_t* bot) {
   for (int i = 0; i < bot->n_threads; i++) {
     free(bot->workers[i]);
   }
+  tt_free(&bot->transpostion_table);
   free(bot->workers);
   return 0;
 }
