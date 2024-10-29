@@ -116,6 +116,7 @@ void position_handler(char* line) {
 
 void go_handler(char* line) {
   bot.search_mode = SEARCHMODE_REGULAR;
+  bot.stop_cond = (bot_term_cond_t){0, 0, 0, 0};
   char * arg = next_arg(&line);
   while (arg) {
     if (strcmp(arg, "searchmoves") == 0) {
