@@ -8,6 +8,19 @@
 #include <signal.h>
 #include <ctype.h>
 
+int set_stdin(int* fd) {
+  close(fd[1]);
+  dup2(fd[0], STDIN_FILENO);
+  close(fd[0]);
+}
+
+int set_stdout(int* fd) {
+  close(fd[0]);
+  dup2(fd[1], STDOUT_FILENO);
+  dup2(fd[1], STDERR_FILENO);
+  close(fd[1]);
+}
+
 int create_bot(bot_interface_t* bot_iface, const char* path) {
   int in_fd[2];
   int out_fd[2];
@@ -18,30 +31,25 @@ int create_bot(bot_interface_t* bot_iface, const char* path) {
   }
 
   int fork_ret = fork();
+
   if (fork_ret == -1) {
     perror("fork failed");
     exit(-1);
   }
 
   if (fork_ret == 0) {
-    close(in_fd[1]);
-    dup2(in_fd[0], STDIN_FILENO);
-    close(in_fd[0]);
-
-    close(out_fd[0]);
-    dup2(out_fd[1], STDOUT_FILENO);
-    dup2(out_fd[1], STDERR_FILENO);
-    close(out_fd[1]);
+    set_stdin(in_fd);
+    set_stdout(out_fd);
     char* argv[] = {NULL};
     execvp(path, argv);
     perror("execvp failed");
     exit(-1);
   }
 
+  bot_iface->pid = fork_ret;
+
   close(in_fd[0]);
   close(out_fd[1]);
-
-  bot_iface->pid = fork_ret;
 
   bot_iface->to_bot = fdopen(in_fd[1], "w");
   bot_iface->from_bot = fdopen(out_fd[0], "r");
