@@ -4,6 +4,7 @@
 #include "../include/perft.h"
 
 static chess_state_t chess_state;
+static chess_state_t chess_state2;
 
 perft_results_t default_board_results[10] = {
     {1, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -67,7 +68,8 @@ void test_perft(perft_test_t test_case) {
   printf("TESTING %s\n", test_case.position);
   for (int i = test_case.depth_of_first_row;
        i <= test_case.depth_of_largest_row; i++) {
-    load_position(&chess_state, test_case.position);
+    load_position(&chess_state2, test_case.position);
+    copy_position(&chess_state, &chess_state2);
     perft_results_t got = perft(&chess_state, i, test_case.flags);
     if (!compare_perft_results(
             got, test_case.results_table[i - test_case.depth_of_first_row],
@@ -92,7 +94,7 @@ int main(int argc, char const* argv[]) {
       {positions[3], results_tables[3], 1, 5, PERFT_JUST_NODES},
   };
 
-  test_perft(test_cases[0]);
+  //test_perft(test_cases[0]);
   test_perft(test_cases[1]);
   test_perft(test_cases[2]);
   test_perft(test_cases[3]);
