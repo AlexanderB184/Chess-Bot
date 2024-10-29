@@ -28,25 +28,25 @@ int entry_age(entry_t entry) { return (int)((entry >> 24) & 0xFF); }
 
 entry_t make_entry(enum tt_entry_type type, move_t best_move, score_cp_t score,
                    int depth, int age) {
-  return (entry_t)((type & 0b11) | ((age & 0xFF) << 16) |
-                   ((depth & 0xFF) << 24) | ((score & 0xFFFF) << 32) |
-                   (((best_move.from & 0x3F) | ((best_move.to & 0x3F) << 6) |
-                     ((best_move.bitpacked_data & 0xF) << 12))
+  return (entry_t)((entry_t)(type & 0b11) | ((entry_t)(age & 0xFF) << 16) |
+                   ((entry_t)(depth & 0xFF) << 24) | ((entry_t)(score & 0xFFFF) << 32) |
+                   (((entry_t)(best_move.from & 0x3F) | ((entry_t)(best_move.to & 0x3F) << 6) |
+                     ((entry_t)(best_move.bitpacked_data & 0xF) << 12))
                     << 48));
 }
 
 void tt_init(table_t* table, uint64_t capacity) {
-  table->items = calloc(capacity * sizeof(key_entry_pair_t));
+  table->items = calloc(capacity, sizeof(key_entry_pair_t));
   table->capacity = capacity;
 }
 
-void tt_free(table_t* table) { free(table->items); }
+void tt_free(table_t* table) { free((void*)table->items); }
 
 entry_t tt_get(table_t* table, zobrist_t key) {
     uint64_t index = key % table->capacity;
     zobrist_t stored_key = table->items[index].key;
     uint64_t stored_entry = table->items[index].entry;
-    if (stored_key ^ stored_entry == key) {
+    if ((stored_key ^ stored_entry) == key) {
         return stored_entry;
     }
     return (entry_t)0;
