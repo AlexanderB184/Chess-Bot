@@ -111,7 +111,7 @@ void update_check(chess_state_t* chess_state, move_t move) {
   // consider reveals
   update_discover_check(chess_state, king_square, from, to);
 
-  if (is_enpassent(move)) {
+  if (!chess_state->discovered_check && is_enpassent(move)) {
     update_discover_check(chess_state, king_square, to - pawn_inc, to);
   }
 }
