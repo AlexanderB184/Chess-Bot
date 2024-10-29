@@ -637,7 +637,7 @@ size_t generate_quiets(const chess_state_t* chess_state, move_t* moves) {
     );
   }
 
-  // rook moves
+  // bishop moves
   int bishop_count = chess_state->friendly_pieces->light_bishop_count;
   sq0x88_t* bishop_list = chess_state->friendly_pieces->light_bishop_list;
   for (int p = 0; p < bishop_count; p++) {
