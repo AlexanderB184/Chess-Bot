@@ -86,9 +86,9 @@ void test_perft(perft_test_t test_case) {
 
 int main(int argc, char const* argv[]) {
   const perft_test_t test_cases[] = {
-      {positions[0], results_tables[0], 0, 5, PERFT_ALL},
-      {positions[1], results_tables[1], 1, 4, PERFT_ALL},
-      {positions[2], results_tables[2], 1, 5, PERFT_ALL},
+      {positions[0], results_tables[0], 0, 10, PERFT_ALL},
+      {positions[1], results_tables[1], 1, 7, PERFT_ALL},
+      {positions[2], results_tables[2], 1, 9, PERFT_ALL},
       {positions[3], results_tables[3], 1, 5, PERFT_JUST_NODES},
   };
 

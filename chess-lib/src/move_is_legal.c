@@ -80,7 +80,7 @@ int is_pinned_enpassent(const chess_state_t* chess_state, move_t move) {
 void trace_ply_stack(const chess_state_t* chess_state) {
   char buffer[512];
   write_movetext_debug(buffer, 512, chess_state);
-  printf("%s\n", buffer);
+  fprintf(stderr, "%s\n", buffer);
 }
 
 // checks if pseudo legal move is legal, assumes position is not in check

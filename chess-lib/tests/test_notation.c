@@ -77,7 +77,7 @@ void test3(chess_state_t* chess_state, int depth) {
     size_t move_count = generate_legal_moves(chess_state, moves);
     for (int i = 0; i < move_count; i++) {
         char out[1028];
-        int outv = write_algebraic_notation(out, sizeof(out), chess_state, moves[i]);
+        int outv = write_long_algebraic_notation(out, sizeof(out), moves[i]);
         if (outv == -1) {
             outv = write_long_algebraic_notation(out, sizeof(out), moves[i]);
             printf("couldn't write \'%s\' in algebraic notation\n", out);
@@ -85,7 +85,7 @@ void test3(chess_state_t* chess_state, int depth) {
         }
         //printf("%s\n", out);
         move_t Move;
-        outv = read_algebraic_notation(out, sizeof(out), chess_state, &Move);
+        outv = read_long_algebraic_notation(out, sizeof(out), chess_state, &Move);
         if (outv == -1) {
             char m[1028];
             write_movetext_debug(m, sizeof(m), chess_state);
