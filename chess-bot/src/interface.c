@@ -109,8 +109,6 @@ void position_handler(char* line) {
       LOGERROR("invalid move in movetext \"%s\"", line);
       return;
     }
-  } else {
-    MISSINGARG("position", "moves");
   }
 }
 
