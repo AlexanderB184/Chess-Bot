@@ -1,22 +1,20 @@
 #include "../include/eval.h"
 
+// @todo
 score_cp_t eval(const chess_state_t* position) {
-  /*
+  
   if (is_draw(position)) {
     return DRAW_SCORE_CENTIPAWNS;
   }
 
-  move_t moves[256];
-  size_t move_count = generate_legal_moves(position, moves);
-
-  if (move_count == 0) {
-    if (is_check(position)) {
-      return CHECKMATE_SCORE_CENTIPAWNS;
-    } else {
-      return STALEMATE_SCORE_CENTIPAWNS;
-    }
+  if (is_checkmate(position)) {
+    return CHECKMATE_SCORE_CENTIPAWNS;
   }
-  */
+  
+  if (is_stalemate(position)) {
+    return STALEMATE_SCORE_CENTIPAWNS;
+  }
+  
 
   // gameover states handled by qSearch
 
