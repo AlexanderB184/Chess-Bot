@@ -47,7 +47,7 @@ entry_t tt_get(table_t* table, zobrist_t key) {
     uint64_t index = key % table->capacity;
     zobrist_t stored_key = table->items[index].key;
     uint64_t stored_entry = table->items[index].entry;
-    if (stored_key == key) {
+    if ((stored_key ^ stored_entry) == key) {
         return stored_entry;
     }
     return (entry_t)0;
@@ -56,7 +56,7 @@ entry_t tt_get(table_t* table, zobrist_t key) {
 void tt_store(table_t* table, zobrist_t key, enum tt_entry_type type, move_t best_move, score_cp_t score, int depth, int age) {
     uint64_t index = key % table->capacity;
     entry_t entry = make_entry(type, best_move, score, depth, age);
-    table->items[index].key = key;
+    table->items[index].key = key ^ entry;
     table->items[index].entry = entry;
 }
 
@@ -65,7 +65,7 @@ void tt_store_depth_prefered(table_t* table, zobrist_t key, enum tt_entry_type t
     uint64_t stored_entry = table->items[index].entry;
     if (!stored_entry || entry_depth(stored_entry) < depth) {
         entry_t entry = make_entry(type, best_move, score, depth, age);
-        table->items[index].key = key;
+        table->items[index].key = key ^ entry;
         table->items[index].entry = entry;
     }
 }
