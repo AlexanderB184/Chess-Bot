@@ -99,6 +99,26 @@ typedef struct worker_t {
 
 } worker_t;
 
+/**
+ * Struct to store the search state
+ */
+typedef struct search_t {
+  chess_state_t position;
+
+  // root node info
+  int root_move_count;
+  score_cp_t root_move_scores[256];
+  move_t root_moves[256];
+
+  table_t * transpo_table;
+  // table_t * pv_table; // use a seperate table just for pv nodes?!?
+  compact_move_t killer_move_table[64][MAX_KILLER_MOVES];
+
+  int root_ply;
+} search_t;
+
+#define ALIAS_SEARCH_STATE
+
 /*
 typedef struct {
   move_t move, refutation;
