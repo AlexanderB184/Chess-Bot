@@ -14,7 +14,7 @@
 #endif
 
 #define BOT_THREAD_COUNT_DEFAULT 1
-#define BOT_HASH_SIZE_MB_DEFAULT 64
+#define BOT_HASH_SIZE_MB_DEFAULT 4
 #define BOT_CAN_PONDER_DEFAULT 0
 
 int bot_init(bot_t* bot, bot_settings_t* settings) {
