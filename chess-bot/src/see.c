@@ -65,12 +65,12 @@ void generate_attackers(const chess_state_t* chess_state,
     if (!(p & BISHOP)) continue;
 
     if (p & chess_state->friendly_colour) {
-      score_centipawn_t value;
+      score_cp_t value = 0;
       if ((p & PIECE_MASK) == BISHOP) value = BISHOP_VALUE;
       if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
       add_attacker(attackers, square, value);
     } else {
-      score_centipawn_t value;
+      score_cp_t value = 0;
       if ((p & PIECE_MASK) == BISHOP) value = BISHOP_VALUE;
       if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
       add_attacker(defenders, square, value);
@@ -89,16 +89,16 @@ void generate_attackers(const chess_state_t* chess_state,
     if (!(p & ROOK)) continue;
 
     if (p & chess_state->friendly_colour) {
-      score_cp_t value;
-      if ((p & PIECE_MASK) == ROOK_VALUE) value = ROOK_VALUE;
+      score_cp_t value = 0;
+      if ((p & PIECE_MASK) == ROOK) value = ROOK_VALUE;
       if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
 
-      add_attacker(attackers, square, piece_value(square, p));
+      add_attacker(attackers, square, value);
     } else {
-      score_cp_t value;
-      if ((p & PIECE_MASK) == ROOK_VALUE) value = ROOK_VALUE;
+      score_cp_t value = 0;
+      if ((p & PIECE_MASK) == ROOK) value = ROOK_VALUE;
       if ((p & PIECE_MASK) == QUEEN) value = QUEEN_VALUE;
-      add_attacker(defenders, square, piece_value(square, p));
+      add_attacker(defenders, square, value);
     }
   }
 
