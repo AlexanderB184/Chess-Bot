@@ -2,8 +2,8 @@
 #include <stdio.h>
 
 #include "../include/chess-lib.h"
-#include "../include/chess-lib-inlines.h"
 #include "../include/private/chess-lib-internals.h"
+
 
 void update_discover_check(chess_state_t* chess_state, sq0x88_t king_square,
                            sq0x88_t revealing_piece_from,
@@ -21,8 +21,7 @@ void update_discover_check(chess_state_t* chess_state, sq0x88_t king_square,
   piece_t revealed_square =
       backwards_ray_cast(chess_state, revealing_piece_from, inc);
 
-  if (off_the_board(revealed_square) ||
-      piece_is_friendly(chess_state, revealed_square))
+  if (off_the_board(revealed_square) || piece_is_friendly(chess_state, revealed_square))
     return;
 
   piece_t revealed_piece = piece(chess_state, revealed_square);
@@ -34,7 +33,7 @@ void update_discover_check(chess_state_t* chess_state, sq0x88_t king_square,
     return;
   }
   chess_state->check_square = revealed_square;
-  chess_state->n_checks += 1;
+  chess_state->n_checks++;
   chess_state->discovered_check = 1;
 }
 
@@ -113,6 +112,10 @@ void update_check(chess_state_t* chess_state, move_t move) {
 
   if (!chess_state->discovered_check && is_enpassent(move)) {
     update_discover_check(chess_state, king_square, to - pawn_inc, to);
+  }
+
+  if (is_double_check(chess_state) && !is_discover_check(chess_state)) {
+    fprintf(stderr, "invalid double check!!!\n");
   }
 }
 
@@ -208,7 +211,7 @@ void init_check(chess_state_t* chess_state) {
     king_square = chess_state->white_pieces.king_square;
   }
 
-  chess_state->check_square = 0;
+  chess_state->check_square = 0x88;
   chess_state->discovered_check = 0;
   chess_state->n_checks = 0;
 
