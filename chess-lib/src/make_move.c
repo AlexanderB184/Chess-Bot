@@ -111,6 +111,26 @@ void update_turn(chess_state_t* chess_state) {
 
 #include <stdio.h>
 void make_move(chess_state_t* chess_state, move_t move) {
+  if (is_null_move(move)) {
+    trace_ply_stack(chess_state);
+    printf("illegal move detected (null move)");
+    abort();
+  }
+  if (piece(chess_state, move.to) & KING) {
+    trace_ply_stack(chess_state);
+    printf("illegal move detected (captures king)");
+    abort();
+  }
+  if (piece_is_friendly(chess_state, move.to)) {
+    trace_ply_stack(chess_state);
+    printf("illegal move detected (captures friendly)");
+    abort();
+  }
+  if (off_the_board(move.from) || off_the_board(move.to)) {
+    trace_ply_stack(chess_state);
+    printf("illegal move detected (off the board)");
+    abort();
+  }
   push_ply_stack(chess_state, move);
   update_half_move_clock(chess_state, move);
   update_board(chess_state, move);
