@@ -8,7 +8,7 @@ enum move_order_state {
   PRIORITY_WINNING_CAPTURE = 0x800,
   PRIORITY_NEUTRAL_CAPTURE = 0x600,
   PRIORITY_KILLER_MOVES    = 0x400,
-  LOSING_CAPTURE           = 0x200,
+  PRIORITY_LOSING_CAPTURE  = 0x200,
   PRIORITY_QUIET_MOVE      = 0x000,
 };
 
@@ -17,7 +17,7 @@ typedef struct move_list_t {
   size_t move_count;
 } move_list_t;
 
-void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move);
+void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move, compact_move_t* killer_moves);
 move_t next_move(const chess_state_t* position, move_list_t* move_list);
 
 #endif
