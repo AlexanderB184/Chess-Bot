@@ -12,19 +12,19 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
 
   move_t* moves = worker->moves;
   size_t move_count = worker->move_count;
-  score_cp_t* scores;
+  score_cp_t* scores = worker->scores;
 
   make_move(position, moves[0]);
-  worker->scores[0] = -abSearch(worker, MIN_SCORE, MAX_SCORE, depth - 1);
+  scores[0] = -abSearch(worker, MIN_SCORE, MAX_SCORE, depth - 1);
   unmake_move(position);
 
   for (size_t i = 1; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
-    scores[i] = -abSearch(worker, MIN_SCORE, -scores[0], depth - 1);
+    scores[i] = -abSearch(worker, -scores[0] - 1, -scores[0], depth - 1);
+    if (scores[i] > alpha) {
+      scores[i] = -abSearch(worker, MIN_SCORE, -scores[0], depth - 1);
+    }
     unmake_move(position);
-    //scores[i] = -abSearch(worker, -scores[0] - 1, -scores[0], depth - 1);
-    //if (scores[i] > alpha) {
-    //}
 
     if (stop(worker)) break;
 
