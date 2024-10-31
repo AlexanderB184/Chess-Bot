@@ -50,6 +50,11 @@ static inline uint16_t get_priority(move_t move) {
   return (move.bitpacked_data & 0xFFF0) >> 4;
 }
 
+static inline move_t set_priority(move_t move, uint16_t prio) {
+  move.bitpacked_data = ((prio << 4) & 0xFFF0) | (move.bitpacked_data & 0x000F);
+  return move;
+}
+
 static inline int is_null_move(move_t move) {
   return move.from == move.to;
 }
