@@ -1,6 +1,7 @@
 #include "../include/move_order.h"
-#include "../include/see.h"
+
 #include "../include/killer_moves.h"
+#include "../include/see.h"
 
 void add_killer_move(compact_move_t* killer_moves, move_t move) {
   compact_move_t compressed_move = compress_move(move);
@@ -11,7 +12,8 @@ void add_killer_move(compact_move_t* killer_moves, move_t move) {
   killer_moves[0] = compressed_move;
 }
 
-void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move, compact_move_t* killer_moves) {
+void init_move_list(const chess_state_t* position, move_list_t* move_list,
+                    move_t hash_move, compact_move_t* killer_moves) {
   move_list->move_count = generate_moves(position, move_list->moves);
   for (int i = 0; i < move_list->move_count; i++) {
     uint16_t prio = PRIORITY_QUIET_MOVE;
@@ -22,6 +24,10 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list, move_
       prio = PRIORITY_WINNING_CAPTURE;
     } else if (is_capture(move)) {
       prio = PRIORITY_NEUTRAL_CAPTURE + value_of(piece(position, move.to)) - value_of(piece(position, move.from));
+      // SEE reduces the number of nodes search substantially but still
+      // increases run time potentially it will be worth re-enabling if
+      // additional features cause the eval time to increase and therefor the
+      // better branch efficiency will make up for the overhead
       /*int see = static_exchange_evaluation(position, move);
       if (see > 0) {
         prio = PRIORITY_WINNING_CAPTURE;
@@ -31,7 +37,6 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list, move_
         prio = PRIORITY_LOSING_CAPTURE;
       }*/
     } else {
-      
       compact_move_t compressed_move = compress_move(move);
       for (int i = 0; i < MAX_KILLER_MOVES; i++) {
         if (killer_moves[i] == compressed_move) {
@@ -39,7 +44,6 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list, move_
           break;
         }
       }
-      
     }
     move_list->moves[i] = set_priority(move, prio);
   }
