@@ -12,6 +12,11 @@ void add_killer_move(compact_move_t* killer_moves, move_t move) {
   killer_moves[0] = compressed_move;
 }
 
+// @todo order promotions based on see and/or MVD/LVA
+// @todo add relative history heuristic for ordering quiet moves
+// @todo add incremental movegen so if a hash move exists we dont generate any
+// moves until it has been tried, we then generate promotions, the captures,
+// then try killer moves, then generate quiets
 void init_move_list(const chess_state_t* position, move_list_t* move_list,
                     move_t hash_move, compact_move_t* killer_moves) {
   move_list->move_count = generate_moves(position, move_list->moves);
@@ -23,7 +28,6 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list,
     } else if (is_promotion(move)) {
       prio = PRIORITY_WINNING_CAPTURE;
     } else if (is_capture(move)) {
-      prio = PRIORITY_NEUTRAL_CAPTURE + value_of(piece(position, move.to)) - value_of(piece(position, move.from));
       // SEE reduces the number of nodes search substantially but still
       // increases run time potentially it will be worth re-enabling if
       // additional features cause the eval time to increase and therefor the
@@ -36,6 +40,8 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list,
       } else {
         prio = PRIORITY_LOSING_CAPTURE;
       }*/
+     prio = PRIORITY_NEUTRAL_CAPTURE;
+      prio += value_of(piece(position, move.to)) - value_of(piece(position, move.from));
     } else {
       compact_move_t compressed_move = compress_move(move);
       for (int i = 0; i < MAX_KILLER_MOVES; i++) {
