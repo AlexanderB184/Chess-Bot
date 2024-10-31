@@ -57,7 +57,8 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     return eval(position);  // qSearch(worker, alpha, beta, depth);
   }
 
-  if (is_draw(position)) {
+  if (is_draw_by_50_move_rule(position) || is_draw_by_insufficient_material(position) ||
+      is_repetition(position, worker->root_ply)) {
     return DRAW_SCORE_CENTIPAWNS;
   }
 
