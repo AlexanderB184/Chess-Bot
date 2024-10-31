@@ -147,6 +147,8 @@ typedef struct move_t {
   uint16_t bitpacked_data;
 } move_t;
 
+typedef uint16_t compact_move_t;
+
 typedef uint64_t zobrist_t;
 
 typedef struct ply_stack_item_t {

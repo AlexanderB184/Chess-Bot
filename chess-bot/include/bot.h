@@ -19,6 +19,7 @@
 typedef int16_t score_cp_t;
 
 #include "transposition_table.h"
+#include "killer_moves.h"
 
 struct match_state_t;
 struct bot_settings_t;
@@ -93,6 +94,7 @@ typedef struct worker_t {
   int move_count;
   score_cp_t scores[256];
   move_t moves[256];
+  compact_move_t killer_moves[64][MAX_KILLER_MOVES];
   int root_ply;
 
 } worker_t;

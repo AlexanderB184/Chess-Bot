@@ -77,7 +77,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   }
 
   move_list_t move_list;
-  init_move_list(position, &move_list, hash_move);
+  init_move_list(position, &move_list, hash_move, worker->killer_moves[depth]);
 
   move_t best_move = next_move(position, &move_list);
 
@@ -97,6 +97,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     if (best_score >= beta) {
       tt_store_depth_prefered(table, position->zobrist, TT_LOWER, best_move,
                               best_score, depth, 0);
+      add_killer_move(worker->killer_moves[depth], best_move);
       return best_score;
     }
     alpha = best_score;
@@ -120,6 +121,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
       if (score >= beta) {
         tt_store_depth_prefered(table, position->zobrist, TT_LOWER, move, score,
                                 depth, 0);
+        add_killer_move(worker->killer_moves[depth], move);
         return score;
       }
       best_score = score;

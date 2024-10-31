@@ -9,7 +9,11 @@ void make_move(chess_state_t* chess_state,move_t move);
 // restores the position to the previous state
 void unmake_move(chess_state_t* chess_state);
 
-// move constructor
-move_t move(sq8x8_t from, sq8x8_t to, uint16_t flags);
+
+int value_of(piece_t piece);
+int value_of_promotion(move_flags_t piece);
+
+
+
 
 #endif

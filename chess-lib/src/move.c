@@ -2,23 +2,12 @@
 #include "../include/private/chess-lib-internals.h"
 
 enum piece_values {
-  PAWN_VALUE = 1,
-  BISHOP_VALUE = 3,
-  KNIGHT_VALUE = 3,
-  ROOK_VALUE = 5,
-  QUEEN_VALUE = 9,
+  PAWN_VALUE = 10,
+  BISHOP_VALUE = 33,
+  KNIGHT_VALUE = 32,
+  ROOK_VALUE = 50,
+  QUEEN_VALUE = 90,
   KING_VALUE = 200,
-};
-
-enum move_priority {
-  MOVE_PRIORITY_PV = 3 * KING_VALUE,
-  MOVE_PRIORITY_HASH_MOVE = 2 * KING_VALUE,
-  MOVE_PRIORITY_WINNING_CAPTURE,  // priority is between KING_VALUE + 1 and 2 *
-                                  // KING_VALUE - 1 inclusive
-  MOVE_PRIORITY_NEUTRAL_CAPTURE = KING_VALUE,  // priority = KING_VALUE exactly
-  MOVE_PRIORITY_LOSING_CAPTURE,  // priority is between 1 and KING_VALUE - 1
-                                 // inclusive
-  MOVE_PRIORITY_QUIET_MOVE = 0
 };
 
 int value_of(piece_t piece) {
@@ -56,10 +45,6 @@ int value_of_promotion(move_flags_t piece) {
 }
 
 #define PRIORITY_MAX 0x0FFF
-
-move_t move(sq0x88_t from, sq0x88_t to, uint16_t flags) {
-  return (move_t){from, to, flags & 0xF};
-}
 
 
 

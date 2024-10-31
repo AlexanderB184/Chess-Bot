@@ -59,8 +59,11 @@ static inline int is_null_move(move_t move) {
   return move.from == move.to;
 }
 
-static inline int compare_moves(move_t lhs, move_t rhs) {
-  return lhs.from == rhs.from && lhs.to == rhs.to && get_flags(lhs) == get_flags(rhs);
+
+
+// move constructor
+static inline move_t move(sq8x8_t from, sq8x8_t to, uint16_t flags) {
+  return (move_t){from, to, flags & 0xF};
 }
 
 // board interface
@@ -143,5 +146,16 @@ static inline uint8_t is_dark_square(sq0x88_t square) {
   return !is_light_square(square);
 }
 
+static inline int compare_moves(move_t lhs, move_t rhs) {
+  return lhs.from == rhs.from && lhs.to == rhs.to && get_flags(lhs) == get_flags(rhs);
+}
+
+static inline compact_move_t compress_move(move_t move) {
+  return sq0x88_to_sq8x8(move.from) | (sq0x88_to_sq8x8(move.to) << 6) | ((move.bitpacked_data & 0xF) << 12);
+}
+
+static inline move_t uncompress_move(compact_move_t compact_move) {
+  return move(sq8x8_to_sq0x88(compact_move), sq8x8_to_sq0x88(compact_move >> 6), compact_move >> 12);
+}
 
 #endif

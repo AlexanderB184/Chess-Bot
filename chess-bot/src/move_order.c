@@ -1,6 +1,17 @@
 #include "../include/move_order.h"
+#include "../include/see.h"
+#include "../include/killer_moves.h"
 
-void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move) {
+void add_killer_move(compact_move_t* killer_moves, move_t move) {
+  compact_move_t compressed_move = compress_move(move);
+  if (compressed_move == killer_moves[0]) return;
+  for (int i = MAX_KILLER_MOVES - 1; i > 0; i--) {
+    killer_moves[i] = killer_moves[i - 1];
+  }
+  killer_moves[0] = compressed_move;
+}
+
+void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move, compact_move_t* killer_moves) {
   move_list->move_count = generate_moves(position, move_list->moves);
   for (int i = 0; i < move_list->move_count; i++) {
     uint16_t prio = PRIORITY_QUIET_MOVE;
@@ -10,7 +21,15 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list, move_
     } else if (is_capture(move) || is_promotion(move)) {
       prio = PRIORITY_WINNING_CAPTURE;
     } else {
-      prio = PRIORITY_QUIET_MOVE;
+      
+      compact_move_t compressed_move = compress_move(move);
+      for (int i = 0; i < MAX_KILLER_MOVES; i++) {
+        if (killer_moves[i] == compressed_move) {
+          prio = PRIORITY_KILLER_MOVES;
+          break;
+        }
+      }
+      
     }
     move_list->moves[i] = set_priority(move, prio);
   }
