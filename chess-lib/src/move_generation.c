@@ -359,7 +359,7 @@ size_t generate_promotions(const chess_state_t* chess_state, move_t* moves) {
     if (!interpose_inc) return move_count;
 
     for (sq0x88_t target = king_square + interpose_inc; target != check_square; target+=interpose_inc) {
-      if (piece(chess_state, target - inc) == friendly_pawn) {
+      if (piece(chess_state, target - inc) == friendly_pawn && is_promoting(chess_state, from)) {
         moves[move_count++] = move(from, check_square, KNIGHT_PROMOTION);
         moves[move_count++] = move(from, check_square, BISHOP_PROMOTION);
         moves[move_count++] = move(from, check_square, ROOK_PROMOTION);
@@ -563,7 +563,7 @@ size_t generate_quiets(const chess_state_t* chess_state, move_t* moves) {
       );
     }
 
-    // rook moves
+    // bishop moves
     int bishop_count = chess_state->friendly_pieces->light_bishop_count;
     sq0x88_t* bishop_list = chess_state->friendly_pieces->light_bishop_list;
     for (int p = 0; p < bishop_count; p++) {
