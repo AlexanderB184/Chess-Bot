@@ -9,19 +9,12 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
   chess_state_t* position = &worker->position;
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
-  move_t moves[256];
-  size_t move_count = generate_legal_moves(position, moves);
-
-  if (move_count == 0) {
-    return 1;
-  }
+  move_t* moves = worker->moves;
+  size_t move_count = worker->move_count;
 
   make_move(position, moves[0]);
-  score_cp_t first_move_score = -abSearch(worker, -beta, -alpha, depth - 1);
+  score_cp_t first_move_score = -abSearch(worker, MIN_SCORE, MAX_SCORE, depth - 1);
   unmake_move(position);
-
-  worker->best_score = first_move_score;
-  worker->best_move = moves[0];
 
   if (first_move_score > alpha) {
     if (first_move_score >= beta) {
@@ -31,24 +24,25 @@ int rootSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta, int depth) {
     alpha = first_move_score;
   }
 
-  for (size_t i = 1; !stop(worker) && i < move_count; i++) {
+  for (size_t i = 0; !stop(worker) && i < move_count; i++) {
     make_move(position, moves[i]);
 
-    score_cp_t score = -abSearch(worker, MIN_SCORE, MAX_SCORE, depth - 1);
+    worker->scores[i] = -abSearch(worker, -worker->scores[0], MAX_SCORE, depth - 1);
     // printf("%d %d\n", alpha, score);
     unmake_move(position);
 
-    if (score >= beta) {
-      printf("FAILED HIGH\n");
-      return 1;
-    }
+    for (int j = i; j > 0; j--) {
+      if (worker->scores[i] < worker->scores[j]) {
+        score_cp_t temp_score = worker->scores[i];
+        worker->scores[i] = worker->scores[j];
+        worker->scores[j] = temp_score;
 
-    if (score > alpha) {
-      alpha = score;
-    }
-    if (score > worker->best_score) {
-      worker->best_score = score;
-      worker->best_move = moves[i];
+        move_t temp_move = worker->moves[i];
+        worker->moves[i] = worker->moves[j];
+        worker->moves[j] = temp_move;
+        continue;
+      }
+      break;
     }
   }
 
@@ -79,9 +73,12 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   }
 
   move_t moves[256];
-  size_t move_count = generate_legal_moves(position, moves);
+  size_t move_count = generate_moves(position, moves);
 
-  if (move_count == 0) {
+  size_t i = 0;
+  while (i < move_count && !is_legal(position, moves[i])) i++;
+
+  if (move_count == i) {
     if (is_check(position)) {
       return CHECKMATE_SCORE_CENTIPAWNS - depth;
     } else {
@@ -96,7 +93,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   //  }
   //}
 
-  move_t best_move = moves[0];
+  move_t best_move = moves[i++];
   make_move(position, best_move);
   score_cp_t best_score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
@@ -108,7 +105,8 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     alpha = best_score;
   }
 
-  for (size_t i = 1; !stop(worker) && i < move_count; i++) {
+  for (; !stop(worker) && i < move_count; i++) {
+    if (!is_legal(position, moves[i])) continue;
     make_move(position, moves[i]);
     score_cp_t score = -abSearch(worker, -beta, -alpha, depth - 1);
     unmake_move(position);
