@@ -8,13 +8,13 @@
 #include <signal.h>
 #include <ctype.h>
 
-int set_stdin(int* fd) {
+void set_stdin(int* fd) {
   close(fd[1]);
   dup2(fd[0], STDIN_FILENO);
   close(fd[0]);
 }
 
-int set_stdout(int* fd) {
+void set_stdout(int* fd) {
   close(fd[0]);
   dup2(fd[1], STDOUT_FILENO);
   dup2(fd[1], STDERR_FILENO);
@@ -104,7 +104,6 @@ int uci_send_position(bot_interface_t* bot_iface, chess_state_t* chess_state) {
     // unmake to last irreversible move or root, save fen, then store each move after to move text
     char cmd[1024] = "position fen ";
     int idx = strlen(cmd);
-    char* ptr;
     move_t move_stack[100];
     int ply_count = 0;
 
@@ -134,8 +133,8 @@ int uci_send_position(bot_interface_t* bot_iface, chess_state_t* chess_state) {
     return uci_send(bot_iface, cmd);
 }
 
-int uci_send_go(bot_interface_t* bot_iface, move_t* searchmoves, int searchmovecount, int ponder, void* clockinfo, void* stopcond) {
-    return uci_send(bot_iface, "go infinite");
+int uci_send_go(bot_interface_t* bot_iface, move_t* searchmoves, int searchmovecount, int ponder, match_state_t* clockinfo, bot_term_cond_t* stopcond) {
+    return uci_send(bot_iface, "go movetime 100");
 }
 
 int uci_send_stop(bot_interface_t* bot_iface) {
