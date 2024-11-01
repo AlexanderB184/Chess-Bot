@@ -58,10 +58,6 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
-  if (depth <= 0) {
-    return eval(position);  // qSearch(worker, alpha, beta, depth);
-  }
-
   if (is_draw_by_50_move_rule(position) || is_draw_by_insufficient_material(position) ||
       is_repetition(position, worker->root_ply)) {
     return DRAW_SCORE_CENTIPAWNS;
@@ -167,16 +163,8 @@ score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     return DRAW_SCORE_CENTIPAWNS;
   }
 
-  move_t moves[256];
-  size_t move_count = generate_legal_moves(position, moves);
-
-  if (move_count == 0) {
-    if (is_check(position)) {
-      return CHECKMATE_SCORE_CENTIPAWNS;
-    } else {
-      return STALEMATE_SCORE_CENTIPAWNS;
-    }
-  }
+  move_list_t move_list;
+  init_move_list(position, &move_list, null_move, worker->killer_moves[depth], worker->history_heuristic, worker->butterfly_heuristic);
 
   score_cp_t stand_pat = eval(position);
 
@@ -189,14 +177,13 @@ score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   }
 
   score_cp_t best_score = stand_pat;
-
-  for (int i = 0; i < move_count; i++) {
-    if (!is_capture(moves[i]) && !is_promotion(moves[i]) &&
-        static_exchange_evaluation(position, moves[i]) >= 0) {
+  move_t move;
+  while (!is_null_move(move = next_capture(position, &move_list)) && !stop(worker)) {
+    if (static_exchange_evaluation(position, move) < 0) {
       continue;
     }
 
-    make_move(position, moves[i]);
+    make_move(position, move);
     score_cp_t score = -qSearch(worker, -beta, -alpha, depth - 1);
     unmake_move(position);
 
