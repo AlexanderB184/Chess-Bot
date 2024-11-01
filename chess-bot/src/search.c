@@ -78,7 +78,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   }
 
   move_list_t move_list;
-  init_move_list(position, &move_list, hash_move, worker->killer_moves[depth]);
+  init_move_list(position, &move_list, hash_move, worker->killer_moves[depth], worker->history_heuristic, worker->butterfly_heuristic);
 
   move_t best_move = next_move(position, &move_list);
 
@@ -94,11 +94,17 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   score_cp_t best_score = -abSearch(worker, -beta, -alpha, depth - 1);
   unmake_move(position);
 
+  if (!is_capture(best_move) && !is_promotion(best_move)) {
+    inc_butteryfly_board(worker->butterfly_heuristic, best_move);
+  }
   if (best_score > alpha) {
     if (best_score >= beta) {
       tt_store_depth_prefered(table, position->zobrist, TT_LOWER, best_move,
                               best_score, depth, 0);
-      add_killer_move(worker->killer_moves[depth], best_move);
+      if (!is_capture(best_move) && !is_promotion(best_move)) {
+        inc_butteryfly_board(worker->history_heuristic, best_move);
+        add_killer_move(worker->killer_moves[depth], best_move);
+      }
       return best_score;
     }
     alpha = best_score;
@@ -119,10 +125,16 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
       if (score > alpha) {
         alpha = score;
       }
+      if (!is_capture(best_move) && !is_promotion(best_move)) {
+        inc_butteryfly_board(worker->butterfly_heuristic, best_move);
+      }
       if (score >= beta) {
         tt_store_depth_prefered(table, position->zobrist, TT_LOWER, move, score,
                                 depth, 0);
-        add_killer_move(worker->killer_moves[depth], move);
+        if (!is_capture(move) && !is_promotion(move)) {
+          inc_butteryfly_board(worker->history_heuristic, move);
+          add_killer_move(worker->killer_moves[depth], move);
+        }
         return score;
       }
       best_score = score;

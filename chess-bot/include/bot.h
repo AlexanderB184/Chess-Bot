@@ -20,6 +20,7 @@ typedef int16_t score_cp_t;
 
 #include "transposition_table.h"
 #include "killer_moves.h"
+#include "move_order.h"
 
 struct match_state_t;
 struct bot_settings_t;
@@ -96,6 +97,8 @@ typedef struct worker_t {
   move_t moves[256];
   compact_move_t killer_moves[64][MAX_KILLER_MOVES];
   int root_ply;
+  int16_t history_heuristic[BUTTERFLY_BOARD_SIZE];
+  int16_t butterfly_heuristic[BUTTERFLY_BOARD_SIZE];
 
 } worker_t;
 

@@ -18,7 +18,7 @@ void add_killer_move(compact_move_t* killer_moves, move_t move) {
 // moves until it has been tried, we then generate promotions, the captures,
 // then try killer moves, then generate quiets
 void init_move_list(const chess_state_t* position, move_list_t* move_list,
-                    move_t hash_move, compact_move_t* killer_moves) {
+                    move_t hash_move, compact_move_t* killer_moves, int16_t* hh, int16_t* bh) {
   move_list->move_count = generate_moves(position, move_list->moves);
   for (int i = 0; i < move_list->move_count; i++) {
     uint16_t prio = PRIORITY_QUIET_MOVE;
@@ -26,7 +26,7 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list,
     if (compare_moves(move, hash_move)) {
       prio = PRIORITY_PV_MOVE;
     } else if (is_promotion(move)) {
-      prio = PRIORITY_WINNING_CAPTURE;
+      prio = PRIORITY_WINNING_CAPTURE + value_of(piece(position, move.to)) + value_of(get_promotes_to(move));
     } else if (is_capture(move)) {
       // SEE reduces the number of nodes search substantially but still
       // increases run time potentially it will be worth re-enabling if
@@ -40,7 +40,7 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list,
       } else {
         prio = PRIORITY_LOSING_CAPTURE;
       }*/
-     prio = PRIORITY_NEUTRAL_CAPTURE;
+      prio = PRIORITY_NEUTRAL_CAPTURE;
       prio += value_of(piece(position, move.to)) - value_of(piece(position, move.from));
     } else {
       compact_move_t compressed_move = compress_move(move);
@@ -49,6 +49,9 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list,
           prio = PRIORITY_KILLER_MOVES;
           break;
         }
+      }
+      if (get_butteryfly_board(bh, move) != 0) {
+        prio = (get_butteryfly_board(hh, move) * 0x200) / get_butteryfly_board(bh, move);
       }
     }
     move_list->moves[i] = set_priority(move, prio);
