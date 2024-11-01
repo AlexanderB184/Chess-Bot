@@ -2,6 +2,7 @@
 
 #include "../include/bot.h"
 #include "../include/search.h"
+#include "../include/move_order.h"
 
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC 0
@@ -23,8 +24,9 @@ void* worker_start(void* arg) {
 
   copy_position(&worker->position, &bot->root_position);
   worker->move_count = generate_legal_moves(&worker->position, worker->moves);
-  
   worker->root_ply = worker->position.ply_counter;
+  reset_butterfly_board(worker->history_heuristic);
+  reset_butterfly_board(worker->butterfly_heuristic);
 
   while (!stop(worker)) {
     rootSearch(worker, MIN_SCORE, MAX_SCORE, bot->depth_searched);
