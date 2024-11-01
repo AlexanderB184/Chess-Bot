@@ -1,6 +1,6 @@
 #include "../include/eval.h"
 
-// @todo
+// @todo piece square tables
 score_cp_t eval(const chess_state_t* position) {
   
   if (is_draw(position)) {
@@ -14,9 +14,6 @@ score_cp_t eval(const chess_state_t* position) {
   if (is_stalemate(position)) {
     return STALEMATE_SCORE_CENTIPAWNS;
   }
-  
-
-  // gameover states handled by qSearch
 
   score_cp_t score =
       +position->friendly_pieces->pawn_count * PAWN_VALUE -
