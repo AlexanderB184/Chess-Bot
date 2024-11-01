@@ -51,6 +51,11 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   chess_state_t* position = &worker->position;
   table_t* table = &worker->bot->transpostion_table;
 
+
+  if (depth <= 0 && !is_check(position)) {
+    return qSearch(worker, alpha, beta, depth);
+  }
+  
   atomic_fetch_add(&worker->bot->nodes_searched, 1);
 
   if (depth <= 0) {
@@ -147,7 +152,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   return best_score;
 }
 
-/*
+
 score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
                    int depth) {
   chess_state_t* position = &worker->position;
@@ -208,4 +213,4 @@ score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   }
 
   return best_score;
-}*/
+}

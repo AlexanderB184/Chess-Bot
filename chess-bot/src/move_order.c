@@ -12,8 +12,6 @@ void add_killer_move(compact_move_t* killer_moves, move_t move) {
   killer_moves[0] = compressed_move;
 }
 
-// @todo order promotions based on see and/or MVD/LVA
-// @todo add relative history heuristic for ordering quiet moves
 // @todo add incremental movegen so if a hash move exists we dont generate any
 // moves until it has been tried, we then generate promotions, the captures,
 // then try killer moves, then generate quiets
@@ -56,6 +54,28 @@ void init_move_list(const chess_state_t* position, move_list_t* move_list,
     }
     move_list->moves[i] = set_priority(move, prio);
   }
+}
+
+move_t next_capture(const chess_state_t* position, move_list_t* move_list) {
+  move_t selected_move;
+  do {
+    if (move_list->move_count == 0) return null_move;
+    size_t selected_idx = 0;
+    int max_priority = get_priority(move_list->moves[0]);
+    for (size_t i = 1; i < move_list->move_count; i++) {
+      int prio = get_priority(move_list->moves[i]);
+      if (prio > max_priority) {
+        max_priority = prio;
+        selected_idx = i;
+      }
+    }
+    selected_move = move_list->moves[selected_idx];
+    if (!is_capture(selected_move) && !is_promotion(selected_move)) {
+      return null_move;
+    }
+    move_list->moves[selected_idx] = move_list->moves[--move_list->move_count];
+  } while (!is_legal(position, selected_move));
+  return selected_move;
 }
 
 move_t next_move(const chess_state_t* position, move_list_t* move_list) {
