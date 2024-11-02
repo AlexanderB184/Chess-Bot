@@ -34,7 +34,10 @@ score_cp_t eval(const chess_state_t* position) {
   return score;
 }
 
-sq0x88_t flipped_square(sq0x88_t sq);
+sq0x88_t flipped_square(sq0x88_t sq) {
+  return rankfile_to_sq0x88(7 - sq0x88_to_rank07(sq),
+                            sq0x88_to_file07(sq));
+}
 
 score_cp_t material_score(const chess_state_t* chess_state) {
   score_cp_t score = 0;
