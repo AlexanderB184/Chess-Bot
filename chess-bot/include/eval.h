@@ -12,8 +12,8 @@
 
 score_cp_t piece_value(sq0x88_t, piece_t piece);
 
+score_cp_t material_score(const chess_state_t*);
 /*
-score_centipawn_t material_score(const chess_state_t*);
 
 score_centipawn_t mobility_score(const chess_state_t*);
 
@@ -44,8 +44,8 @@ score_cp_t eval(const chess_state_t* position);
 int is_repetition(const chess_state_t* position, int ply_of_root);
 
 const static score_cp_t king_square_table[64] = {
-     20, 100,   0, -50, -75, 100, 100,  20,
-     10,  20, -50, -75, -75,  20,  20,  10,
+     20,  50,   0, -10, -25,  50,  60,  20,
+     10,  20, -50, -75, -50,  20,  20,  10,
      10, -20, -75,-100,-100, -50, -50,  10,
     -20, -50,-110,-110,-110,-110,-110, -20,
    -125,-125,-125,-125,-125,-125,-125,-125,
