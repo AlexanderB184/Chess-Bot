@@ -16,19 +16,18 @@ score_cp_t eval(const chess_state_t* position) {
   }
 
   score_cp_t score =
-      +position->friendly_pieces->pawn_count * PAWN_VALUE -
-      position->enemy_pieces->pawn_count * PAWN_VALUE +
-      position->friendly_pieces->knight_count * KNIGHT_VALUE -
-      position->enemy_pieces->knight_count * KNIGHT_VALUE +
-      position->friendly_pieces->light_bishop_count * BISHOP_VALUE -
-      position->enemy_pieces->light_bishop_count * BISHOP_VALUE +
-      position->friendly_pieces->dark_bishop_count * BISHOP_VALUE -
-      position->enemy_pieces->dark_bishop_count * BISHOP_VALUE +
-      position->friendly_pieces->rook_count * ROOK_VALUE -
-      position->enemy_pieces->rook_count * ROOK_VALUE +
-      position->friendly_pieces->queen_count * QUEEN_VALUE -
-      position->enemy_pieces->queen_count * QUEEN_VALUE;
-
+       + position->friendly_pieces->pawn_count         * PAWN_VALUE
+       - position->enemy_pieces->pawn_count            * PAWN_VALUE
+       + position->friendly_pieces->knight_count       * KNIGHT_VALUE
+       - position->enemy_pieces->knight_count          * KNIGHT_VALUE
+       + position->friendly_pieces->light_bishop_count * BISHOP_VALUE
+       - position->enemy_pieces->light_bishop_count    * BISHOP_VALUE
+       + position->friendly_pieces->dark_bishop_count  * BISHOP_VALUE
+       - position->enemy_pieces->dark_bishop_count     * BISHOP_VALUE
+       + position->friendly_pieces->rook_count         * ROOK_VALUE
+       - position->enemy_pieces->rook_count            * ROOK_VALUE
+       + position->friendly_pieces->queen_count        * QUEEN_VALUE
+       - position->enemy_pieces->queen_count           * QUEEN_VALUE;
   return score;
 }
 
