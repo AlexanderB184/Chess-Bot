@@ -28,8 +28,77 @@ score_cp_t eval(const chess_state_t* position) {
        - position->enemy_pieces->rook_count            * ROOK_VALUE
        + position->friendly_pieces->queen_count        * QUEEN_VALUE
        - position->enemy_pieces->queen_count           * QUEEN_VALUE;
+
+       score += material_score(position);
+
   return score;
 }
+
+sq0x88_t flipped_square(sq0x88_t sq);
+
+score_cp_t material_score(const chess_state_t* chess_state) {
+  score_cp_t score = 0;
+
+  {
+    sq0x88_t sq = chess_state->white_pieces.king_square;
+    score += king_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.king_square);
+    score -= king_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->white_pieces.pawn_count; p++) {
+    sq0x88_t sq = chess_state->white_pieces.pawn_list[p];
+    score += pawn_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->black_pieces.pawn_count; p++) {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.pawn_list[p]);
+    score -= pawn_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->white_pieces.knight_count; p++) {
+    sq0x88_t sq = chess_state->white_pieces.knight_list[p];
+    score += knight_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->black_pieces.knight_count; p++) {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.knight_list[p]);
+    score -= knight_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->white_pieces.light_bishop_count; p++) {
+    sq0x88_t sq = chess_state->white_pieces.light_bishop_list[p];
+    score += bishop_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->black_pieces.light_bishop_count; p++) {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.light_bishop_list[p]);
+    score -= bishop_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->white_pieces.dark_bishop_count; p++) {
+    sq0x88_t sq = chess_state->white_pieces.dark_bishop_list[p];
+    score += bishop_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->black_pieces.dark_bishop_count; p++) {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.dark_bishop_list[p]);
+    score -= bishop_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->white_pieces.rook_count; p++) {
+    sq0x88_t sq = chess_state->white_pieces.rook_list[p];
+    score += rook_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->black_pieces.rook_count; p++) {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.rook_list[p]);
+    score -= rook_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->white_pieces.queen_count; p++) {
+    sq0x88_t sq = chess_state->white_pieces.queen_list[p];
+    score += queen_square_table[sq0x88_to_sq8x8(sq)];
+  }
+  for (int p = 0; p < chess_state->black_pieces.queen_count; p++) {
+    sq0x88_t sq = flipped_square(chess_state->black_pieces.queen_list[p]);
+    score -= queen_square_table[sq0x88_to_sq8x8(sq)];
+  }
+
+  return chess_state->black_to_move ? -score : score;
+}
+
 
 score_cp_t piece_value(sq0x88_t sq, piece_t p) {
   switch (p & PIECE_MASK) {

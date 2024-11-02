@@ -43,4 +43,11 @@ score_cp_t eval(const chess_state_t* position);
 
 int is_repetition(const chess_state_t* position, int ply_of_root);
 
+const static score_cp_t king_square_table[64];
+const static score_cp_t queen_square_table[64];
+const static score_cp_t rook_square_table[64];
+const static score_cp_t bishop_square_table[64];
+const static score_cp_t knight_square_table[64];
+const static score_cp_t pawn_square_table[64];
+
 #endif
