@@ -50,6 +50,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
   // aliasing thread data
   chess_state_t* position = &worker->position;
   table_t* table = &worker->bot->transpostion_table;
+  int ply = position->ply_counter- worker->root_ply;
 
 
   if (depth <= 0 && !is_check(position)) {
@@ -104,7 +105,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
                               best_score, depth, 0);
       if (!is_capture(best_move) && !is_promotion(best_move)) {
         inc_butteryfly_board(worker->history_heuristic, best_move);
-        add_killer_move(worker->killer_moves[depth], best_move);
+        add_killer_move(worker->killer_moves[ply], best_move);
       }
       return best_score;
     }
@@ -134,7 +135,7 @@ score_cp_t abSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
                                 depth, 0);
         if (!is_capture(move) && !is_promotion(move)) {
           inc_butteryfly_board(worker->history_heuristic, move);
-          add_killer_move(worker->killer_moves[depth], move);
+          add_killer_move(worker->killer_moves[ply], move);
         }
         return score;
       }
