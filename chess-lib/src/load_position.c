@@ -216,9 +216,9 @@ long load_position(chess_state_t* chess_state, const char* buffer) {
 long save_position(const chess_state_t* chess_state, char* buffer, long size) {
   // save piece table
   long bytes_written = 0;
-  for (rank07_t r = 7; r >= 0; r--) {
+  for (int r = 7; r >= 0; r--) {
     int empties = 0;
-    for (file07_t f = 0; f < 8; f++) {
+    for (int f = 0; f < 8; f++) {
       piece_t p = piece(chess_state, rankfile_to_sq0x88(r, f));
       if (p == EMPTY) {
         empties++;
@@ -292,6 +292,7 @@ long save_position(const chess_state_t* chess_state, char* buffer, long size) {
   if (!off_the_board(enpassent_target(chess_state))) {
     long out = write_square(buffer + bytes_written, size - bytes_written, enpassent_target(chess_state));
     if (out == -1) return -1;
+    buffer += out;
   } else {
     if (bytes_written+1 >= size) WRITE_ERROR("insufficient space in buffer");
     buffer[bytes_written++] = '-';
@@ -306,7 +307,7 @@ long save_position(const chess_state_t* chess_state, char* buffer, long size) {
     size - bytes_written, 
     "%d %d", 
     chess_state->half_move_clock / 2, 
-    chess_state->ply_counter / 2
+    (chess_state->ply_counter / 2) + 1
   );
   if (out > size - bytes_written) {
     WRITE_ERROR("insufficient space in buffer");
