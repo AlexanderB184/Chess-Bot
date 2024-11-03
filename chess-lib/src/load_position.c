@@ -199,7 +199,7 @@ long load_position(chess_state_t* chess_state, const char* buffer) {
   // full move counter
   if (bytes_read < size && buffer[bytes_read] >= '1' && buffer[bytes_read] <= '9') {
     int move_counter = buffer[bytes_read++] - '0';
-    if (bytes_read < size && buffer[bytes_read] >= '0' && buffer[bytes_read] <= '9') {
+    while (bytes_read < size && buffer[bytes_read] >= '0' && buffer[bytes_read] <= '9') {
       move_counter = 10 * move_counter + buffer[bytes_read++] - '0';
     }
     chess_state->ply_counter = (move_counter-1) * 2 + chess_state->black_to_move;
