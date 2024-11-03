@@ -37,12 +37,14 @@ int main(int argc, char const *argv[])
     int outcome;
     for (int i = 0; i < nmatches / 2; i++) {
         outcome = play_match(&bots[0], &bots[1]);
+        printf("game %d done\n", i * 2);
         if (outcome == WHITE) {
             wins[0]++;
         } else if (outcome == BLACK) {
             wins[1]++;
         }
         outcome = play_match(&bots[1], &bots[0]);
+        printf("game %d done\n", i * 2 + 1);
         if (outcome == WHITE) {
             wins[1]++;
         } else if (outcome == BLACK) {
