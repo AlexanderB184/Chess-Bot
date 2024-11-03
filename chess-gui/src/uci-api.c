@@ -56,6 +56,8 @@ int create_bot(bot_interface_t* bot_iface, const char* path) {
   int in_fd[2];
   int out_fd[2];
 
+  bot_iface->quiet_mode = 1;
+
   if (pipe(in_fd) == -1 || pipe(out_fd) == -1) {
     perror("pipe failed");
     exit(-1);
