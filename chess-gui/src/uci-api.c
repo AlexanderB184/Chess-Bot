@@ -8,6 +8,37 @@
 #include <signal.h>
 #include <ctype.h>
 
+char * next_arg(char** line_ptr) {
+    char* line = *line_ptr;
+    while (*line && isspace(*line)) {
+        line++;
+    }
+
+    if (*line == '\0') {
+        *line_ptr = line;
+        return NULL;
+    }
+
+    char* arg_start = line;
+
+    while (*line && !isspace(*line)) {
+        line++;
+    }
+
+    if (*line) {
+        *line = '\0';
+        line++;
+    }
+
+    while (*line && isspace(*line)) {
+        line++;
+    }
+
+    *line_ptr = line;
+
+    return arg_start;
+}
+
 void set_stdin(int* fd) {
   close(fd[1]);
   dup2(fd[0], STDIN_FILENO);
@@ -134,7 +165,63 @@ int uci_send_position(bot_interface_t* bot_iface, chess_state_t* chess_state) {
 }
 
 int uci_send_go(bot_interface_t* bot_iface, move_t* searchmoves, int searchmovecount, int ponder, match_state_t* clockinfo, bot_term_cond_t* stopcond) {
-    return uci_send(bot_iface, "go movetime 100");
+  char msg_buffer[1024] = "";
+  long bytes_written = 0;
+  bytes_written += snprintf(msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, "go ");
+  if (searchmoves) {
+
+  }
+  if (ponder) {
+    bytes_written += snprintf(
+      msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+      "ponder "
+    );
+  }
+  if (clockinfo) {
+    bytes_written += snprintf(
+      msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+      "wtime %ld btime %ld winc %ld binc %ld ", 
+      clockinfo->wtime, 
+      clockinfo->btime, 
+      clockinfo->winc, 
+      clockinfo->binc
+    );
+  }
+  if (stopcond) {
+    if (stopcond->depth_limit_ply) {
+      bytes_written += snprintf(
+        msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+        "depth %ld ", stopcond->depth_limit_ply
+      );
+    }
+    if (stopcond->node_limit_nds) {
+      bytes_written += snprintf(
+        msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+        "nodes %ld ", stopcond->node_limit_nds
+      );
+    }
+    if (stopcond->time_limit_ms) {
+      bytes_written += snprintf(
+        msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+        "movetime %ld ", stopcond->time_limit_ms
+      );
+    }
+    if (stopcond->mate_in_ply) {
+      bytes_written += snprintf(
+        msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+        "matein %ld ", stopcond->mate_in_ply
+      );
+    }
+    if (!stopcond->depth_limit_ply && !stopcond->node_limit_nds
+     && !stopcond->time_limit_ms   && !stopcond->mate_in_ply) {
+      bytes_written += snprintf(
+        msg_buffer + bytes_written, sizeof(msg_buffer) - bytes_written, 
+        "infinite "
+      );
+    }
+  }
+
+  return uci_send(bot_iface, msg_buffer);
 }
 
 int uci_send_stop(bot_interface_t* bot_iface) {
