@@ -135,7 +135,7 @@ int uci_send_position(bot_interface_t* bot_iface, chess_state_t* chess_state) {
     // unmake to last irreversible move or root, save fen, then store each move after to move text
     char cmd[1024] = "position fen ";
     int idx = strlen(cmd);
-    move_t move_stack[100];
+    move_t move_stack[128];
     int ply_count = 0;
 
     while (chess_state->ply_counter > chess_state->ply_of_last_irreversible_move && chess_state->ply_counter>0) {
@@ -254,11 +254,28 @@ long uci_read_bestmove(bot_interface_t* bot_iface, chess_state_t* position, move
     if (uci_read_block(bot_iface, msg_buffer, sizeof(msg_buffer)) < 0) {
       return 0;
     }
-    if (strcmp(msg_buffer, "bestmove") == 0) {
-      long bytes_left = sizeof(msg_buffer);
-      read_long_algebraic_notation(msg_buffer, bytes_left, position, bestmove);
+    char * line = msg_buffer;
+    char * arg = next_arg(&line);
+    if (strncmp(arg, "bestmove", 8) == 0) {
+      arg = next_arg(&line);
+      long bytes_left = sizeof(msg_buffer) - (line - msg_buffer);
+      int out;
+      out = read_long_algebraic_notation(arg, bytes_left, position, bestmove);
+      if (out < 0) {
+        printf("ILLEGAL MOVE: %s\n", arg);
+        return -1;
+      }
+      return 0;
       // check if ponder token exists
-      read_long_algebraic_notation(msg_buffer, bytes_left, position, ponder);
+      arg = next_arg(&line);
+      bytes_left = sizeof(msg_buffer) - (line - msg_buffer);
+      printf("%ld\n", bytes_left);
+      out = read_long_algebraic_notation(arg, bytes_left, position, ponder);
+      if (out < 0) {
+        printf("ILLEGAL MOVE: %s\n", arg);
+        return -1;
+      }
+      return 0;
     }
   } while (1);
 }
