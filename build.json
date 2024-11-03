@@ -1,0 +1,34 @@
+{
+    "bot": {
+        "modules": [
+            "chess-lib",
+            "chess-bot"
+        ],
+        "files": [],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "output": "bot.exe"
+    },
+    "botvbot": {
+        "modules": [
+            "chess-lib",
+            "chess-gui"
+        ],
+        "files": ["tests/botvbot.c"],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "output": "botvbot.exe"
+    }
+}

@@ -1,39 +1,42 @@
-import os, sys
+import os, sys, json
 
-# c compiler
-compiler: str = "gcc"
+opt_flag = ['-O3']
+warn_flag = ['-Wall', '-Werror']
+thread_flag = ['-pthread']
+debug_flag = ['-DDEBUG']
 
-# choose which modules to include, will automatically compile all .c files in [dir]/src
-src_dirs: "list[str]" = ['chess-lib', 'chess-gui'] 
+def path_to_this() -> str:
+    return os.path.join(*sys.argv[0].split("/")[:-1]) if "/" in sys.argv[0] else ""
 
-# c files not with the src folder of a module that should be included
-loose_c_files: "list[str]" = ['tests/botvbot.c'] 
+def list_c_files(dir: str) -> 'list[str]':
+    return [os.path.join(dir, file) for file in os.listdir(dir) if file[-2:] == ".c"]
 
-# gcc compiler flags + custom flags (-DDEBUG enables some debug messages in chess-lib functions)
-flags: "list[str]" = ["-Werror", "-Wall", "-pthread", "-O3", "-DDEBUG"]
-
-# output directory
-build_dir: "list[str]" = "build" 
-
-#output name
-target_name: str = "botvbot.exe"
-
-if __name__ == "__main__":
-
-    path_from_cwd = (
-        os.path.join(*sys.argv[0].split("/")[:-1]) if "/" in sys.argv[0] else ""
-    )
-
-
-    target = os.path.join(build_dir, target_name)
-    flag_string = " ".join(flags)
-    # compile each .c file in /src into .o
-
-    files = [*loose_c_files]
-    for src_dir in src_dirs:
-        src_full_path = os.path.join(path_from_cwd, src_dir, 'src')
-        files = [*files, *(os.path.join(src_full_path, file) for file in os.listdir(src_full_path) if file[-2:] == ".c")]
-        print(files)
+def compile(compiler, files, flags, target):
     cmd = " ".join([compiler, *files, *flags, "-o", target])
     print(f"executing: {cmd}")
     os.system(cmd)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(f"usage: python3 {sys.argv[0]} [build scheme name]")
+        print(f"do build.py --help for a list of options")
+        exit(0)
+
+    if sys.argv[1] == "--help":
+        with open('build.json') as file:
+            schemes = json.load(file)
+        for scheme in schemes:
+            print(scheme)
+        exit(0)
+
+    
+    with open('build.json') as file:
+        scheme = json.load(file)[sys.argv[1]]
+    compiler = scheme["compiler"]
+    files = scheme["files"]
+    modules = scheme["modules"]
+    flags = scheme["flags"]
+    output = scheme["output"]
+    for module in modules:
+        files = files + list_c_files(os.path.join(module, 'src'))
+    compile(compiler, files, flags, output)
