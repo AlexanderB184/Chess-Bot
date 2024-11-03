@@ -31,8 +31,6 @@ int main(int argc, char const *argv[])
     bot_interface_t bots[2];
     create_bot(&bots[0], bot1);
     create_bot(&bots[1], bot2);
-    uci_send_uci(&bots[0]);
-    uci_send_uci(&bots[1]);
     int wins[2] = {0, 0};
     int outcome;
     for (int i = 0; i < nmatches / 2; i++) {

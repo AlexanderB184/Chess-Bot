@@ -56,8 +56,6 @@ int create_bot(bot_interface_t* bot_iface, const char* path) {
   int in_fd[2];
   int out_fd[2];
 
-  bot_iface->quiet_mode = 1;
-
   if (pipe(in_fd) == -1 || pipe(out_fd) == -1) {
     perror("pipe failed");
     exit(-1);
@@ -93,12 +91,28 @@ int create_bot(bot_interface_t* bot_iface, const char* path) {
   }
 
   bot_iface->path = path;
-  bot_iface->name = path;
 
+  uci_send_uci(bot_iface);
+  char buffer[1024];
+  do {
+    uci_read_block(bot_iface, buffer, sizeof(buffer));
+    char* line = buffer;
+    char* arg = next_arg(&line);
+    if (strncmp(arg, "id", 2) == 0) {
+      arg = next_arg(&line);
+      if (strncmp(arg, "name", 4) == 0) {
+        bot_iface->name = strdup(line);
+      }
+    }
+    if (strncmp(buffer, "uciok", 5) == 0) {
+      break;
+    }
+  } while (1);
   return 0;
 }
 
 int kill_bot(bot_interface_t* bot_iface) {
+  free(bot_iface->name);
   fclose(bot_iface->from_bot);
   fclose(bot_iface->to_bot);
   kill(bot_iface->pid, SIGTERM);
@@ -245,7 +259,9 @@ long uci_read_block(bot_interface_t* bot_iface, char* msg_buffer, long buffer_si
   exit(-1);
   }
   if (!bot_iface->quiet_mode) fprintf(stdout, "[BOT %s TO GUI] %s", bot_iface->name, msg_buffer);
-  return strlen(msg_buffer);
+  long len = strlen(msg_buffer) - 1;
+  msg_buffer[len] = 0;
+  return len;
 }
 
 long uci_read_noblock(bot_interface_t* bot_iface, char* msg_buffer, long buffer_size);

@@ -27,7 +27,8 @@ typedef struct bot_interface_t {
   FILE *from_bot, *to_bot;  // streams for talking to bot
   pid_t pid;                // bot pid
   int quiet_mode;           // log all commands and responses to standard out
-  const char *path, *name;  // store info about bot
+  const char *path;
+  char *name;  // store info about bot
 } bot_interface_t;
 
 int create_bot(bot_interface_t* bot_iface, const char* path);
