@@ -13,6 +13,7 @@
             "-O3",
             "-DDEBUG"
         ],
+        "builddir": "build",
         "output": "bot.exe"
     },
     "botvbot": {
@@ -29,6 +30,7 @@
             "-O3",
             "-DDEBUG"
         ],
+        "builddir": "build",
         "output": "botvbot.exe"
     }
 }

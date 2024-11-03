@@ -36,7 +36,8 @@ if __name__ == "__main__":
     files = scheme["files"]
     modules = scheme["modules"]
     flags = scheme["flags"]
-    output = scheme["output"]
+    builddir = scheme["builddir"]
+    output = os.path.join(builddir, scheme["output"])
     for module in modules:
         files = files + list_c_files(os.path.join(module, 'src'))
     compile(compiler, files, flags, output)
