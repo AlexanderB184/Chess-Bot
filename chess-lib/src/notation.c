@@ -7,6 +7,11 @@
 #include "../include/private/chess-lib-internals.h"
 #include "../include/notation.h"
 
+#ifdef DEBUG
+#define PRINT_READ_ERRORS
+#define PRINT_WRITE_ERRORS
+#endif
+
 #ifdef PRINT_READ_ERRORS
 #define READ_ERROR(msg, args...) {fprintf(stderr,"READ ERROR: reading \"%s\" ", buffer);fprintf(stderr, msg, ##args); return -1;}
 #else
