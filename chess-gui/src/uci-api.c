@@ -120,7 +120,7 @@ int kill_bot(bot_interface_t* bot_iface) {
 }
 
 int uci_send(bot_interface_t* bot_iface, const char* cmd) {
-  if (!bot_iface->quiet_mode) fprintf(stdout, "[GUI TO %s BOT] %s\n", bot_iface->name, cmd);
+  if (!bot_iface->quiet_mode) fprintf(stdout, "[GUI TO %s] %s\n", bot_iface->name, cmd);
   if (fprintf(bot_iface->to_bot, "%s\n", cmd) < 0) {
     perror("send command failed");
     return -1;
@@ -258,7 +258,7 @@ long uci_read_block(bot_interface_t* bot_iface, char* msg_buffer, long buffer_si
   perror("read response failed");
   exit(-1);
   }
-  if (!bot_iface->quiet_mode) fprintf(stdout, "[BOT %s TO GUI] %s", bot_iface->name, msg_buffer);
+  if (!bot_iface->quiet_mode) fprintf(stdout, "[%s TO GUI] %s", bot_iface->name, msg_buffer);
   long len = strlen(msg_buffer) - 1;
   msg_buffer[len] = 0;
   return len;
