@@ -16,6 +16,23 @@
         "builddir": "build",
         "output": "bot.exe"
     },
+    "botversion": {
+        "modules": [
+            "versions/version0.1.1A/chess-lib",
+            "versions/version0.1.1A/chess-bot"
+        ],
+        "files": [],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "builddir": "build",
+        "output": "botv0.1.1.exe"
+    },
     "botvbot": {
         "modules": [
             "chess-lib",
@@ -32,5 +49,22 @@
         ],
         "builddir": "build",
         "output": "botvbot.exe"
+    },
+    "chess": {
+        "modules": [
+            "chess-lib",
+            "chess-gui"
+        ],
+        "files": ["tests/chess.c"],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "builddir": "build",
+        "output": "chess.exe"
     }
 }
