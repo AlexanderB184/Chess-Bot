@@ -173,16 +173,25 @@ score_cp_t qSearch(worker_t* worker, score_cp_t alpha, score_cp_t beta,
     return stand_pat;
   }
 
+  //if (stand_pat + 950 < alpha) {
+  //  return stand_pat;
+  //}
+
   if (stand_pat > alpha) {
     alpha = stand_pat;
   }
 
+
   score_cp_t best_score = stand_pat;
   move_t move;
   while (!is_null_move(move = next_capture(position, &move_list)) && !stop(worker)) {
-    if (static_exchange_evaluation(position, move) < 0) {
+    if (!is_promotion(move) && static_exchange_evaluation(position, move) < 0) {
       continue;
     }
+
+    //if (stand_pat + piece_value(move.to, piece(position, move.to)) < alpha - 200) {
+    //  continue;
+    //}
 
     make_move(position, move);
     score_cp_t score = -qSearch(worker, -beta, -alpha, depth - 1);
