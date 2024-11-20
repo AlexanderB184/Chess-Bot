@@ -11,10 +11,28 @@
             "-Werror",
             "-pthread",
             "-O3",
-            "-DDEBUG"
+            "-DDEBUG",
+            "-pg"
         ],
         "builddir": "build",
         "output": "bot.exe"
+    },
+    "testbot": {
+        "modules": [
+            "chess-lib",
+            "chess-gui"
+        ],
+        "files": ["tests/testbot.c"],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "builddir": "build",
+        "output": "testbot.exe"
     },
     "botversion": {
         "modules": [
