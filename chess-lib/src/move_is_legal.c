@@ -98,14 +98,13 @@ int is_legal_king_move(const chess_state_t* chess_state, move_t move) {
 // checks if pseudo legal move is legal, assumes position is not in check
 int is_legal(const chess_state_t* chess_state, move_t move) {
   sq0x88_t from = get_from(move);
-  sq0x88_t to = get_to(move);
 
   // if (piece(chess_state, to) & KING) {
   //   trace_ply_stack(chess_state);
   //   printf("can capture king\n");
   //   abort();
   // }
-  sq0x88_t inc;
+
   sq0x88_t king_square = chess_state->friendly_pieces->king_square;
 
   if (from == king_square) {  // king moves
@@ -114,7 +113,7 @@ int is_legal(const chess_state_t* chess_state, move_t move) {
   if (is_enpassent(move)) {
     if (is_pinned_enpassent(chess_state, move)) return 0;
   }
-  (void)inc;
+
   return !is_pinned(chess_state, move);
   /*
   // checking moved piece is not pinned
@@ -239,7 +238,7 @@ int is_pseudo_legal(const chess_state_t* chess_state, move_t move) {
 
   // check rules for psuedo legal (ignoring pin checks & moving king to threatened square)
   if (is_check(chess_state)) {
-    if (piece(chess_state, from) & PIECE_MASK == KING) {
+    if ((piece(chess_state, from) & PIECE_MASK) == KING) {
       return 1;
     }
     if (is_double_check(chess_state)) {
@@ -248,11 +247,11 @@ int is_pseudo_legal(const chess_state_t* chess_state, move_t move) {
 
     sq0x88_t check_square = checking_square(chess_state);
     // capturing checking piece
-    if (is_capture(move) && !to == check_square) {
-      return 0;
+    if (is_capture(move)) {
+      return to == check_square;
     }
     // checker is not interposable
-    if (piece(chess_state, check_square) & QUEEN == 0) {
+    if ((piece(chess_state, check_square) & QUEEN) == 0) {
       return 0;
     }
     sq0x88_t king_square = chess_state->friendly_pieces->king_square;
