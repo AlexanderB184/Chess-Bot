@@ -84,5 +84,21 @@
         ],
         "builddir": "build",
         "output": "chess.exe"
+    },
+    "perft": {
+        "modules": [
+            "chess-lib"
+        ],
+        "files": ["chess-lib/tests/test_correctness.c"],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "builddir": "build",
+        "output": "perft.exe"
     }
 }
