@@ -7,6 +7,10 @@
 // returns true if the move doesn't move an absolutely pinned piece
 int is_legal(const chess_state_t* chess_state, move_t move);
 
+// checks move rules, does not check if piece is pinned, must be combined with
+// is_legal for full validation
+int is_pseudo_legal(const chess_state_t* chess_state, move_t move);
+
 // check if a move is fully legal in the given position
 int is_valid_move(const chess_state_t* chess_state, move_t move);
 
