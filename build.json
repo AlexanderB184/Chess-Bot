@@ -100,5 +100,21 @@
         ],
         "builddir": "build",
         "output": "perft.exe"
+    },
+    "test_is_pseudo_legal": {
+        "modules": [
+            "chess-lib"
+        ],
+        "files": ["chess-lib/tests/test_is_pseudo_legal.c"],
+        "compiler": "gcc",
+        "flags": [
+            "-Wall",
+            "-Werror",
+            "-pthread",
+            "-O3",
+            "-DDEBUG"
+        ],
+        "builddir": "build",
+        "output": "is_pseudo_legal.exe"
     }
 }
