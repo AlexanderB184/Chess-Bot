@@ -37,6 +37,10 @@ enum move_order_state {
 typedef struct move_list_t {
   move_t moves[256];
   size_t move_count;
+  move_t hash_move;
+  compact_move_t* killer_moves;
+  int16_t* bh, *hh;
+  enum move_order_state state;
 } move_list_t;
 
 void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move, compact_move_t* killer_moves, int16_t*,int16_t*);

@@ -11,8 +11,7 @@
             "-Werror",
             "-pthread",
             "-O3",
-            "-DDEBUG",
-            "-pg"
+            "-DDEBUG"
         ],
         "builddir": "build",
         "output": "bot.exe"

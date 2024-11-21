@@ -15,7 +15,7 @@
 
 #define AUTHOR "Alex B"
 #define BOT_NAME "ABBOT"
-#define BOT_VERSION "0.1.0"
+#define BOT_VERSION "0.1.3"
 
 #define UNIMPLEMENTED fprintf(stderr, "unimplemented\n")
 #define INVALIDARG(CMD, ARG) fprintf(stderr, "\"%s\" is not a valid argument for command \"%s\"\n", (ARG), (CMD))
@@ -83,12 +83,10 @@ void debug_handler(char* line) {
 
 void isready_handler(char* line) {
   TELLGUI("readyok");
-
 }
 
 void ucinewgame_handler(char* line) {
   bot_load_fen(&bot, startpos);
-
 }
 
 void position_handler(char* line) {
