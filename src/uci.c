@@ -162,6 +162,8 @@ void position_handler() {
       LOGERROR("invalid fen \"%s\"", arg);
       return;
     }
+  } else {
+    MISSINGARG("position", "fen/startpos");
   }
 
   if (arg && uci_strcmp(arg, "moves")) {

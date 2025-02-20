@@ -52,7 +52,7 @@ int bot_load_move(bot_t* bot, const char* movetext) {
   long bytes_to_read = strlen(movetext);
   move_t move;
   long out = read_long_algebraic_notation(movetext, bytes_to_read, root_position, &move);
-  
+
   if (out == -1) {
     release_position(root_position);
     return -1;
@@ -97,8 +97,6 @@ int bot_ponder_hit(bot_t* bot) {
 int bot_stop(bot_t* bot) {
   
   atomic_store(&bot->abort, 1);
-  // Wait for each thread to finish
-  bot_wait(bot);
   return 0;
 }
 
@@ -117,6 +115,7 @@ int bot_is_running(bot_t* bot) {
 
 int bot_release(bot_t* bot) {
   bot_stop(bot);
+  bot_wait(bot);
   for (int i = 0; i < bot->n_threads; i++) {
     free(bot->workers[i]);
   }
