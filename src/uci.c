@@ -261,6 +261,7 @@ void go_handler() {
 
 void stop_handler() {
   bot_stop(&bot);
+  bot_wait(&bot);
   uci_next_arg();
 }
 
