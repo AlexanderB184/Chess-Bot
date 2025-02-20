@@ -1,33 +1,33 @@
-#include "../include/eval.h"
+#include "../include/bot.h"
 
 // @todo piece square tables
-score_cp_t eval(const chess_state_t* position) {
+centipawn_t eval(const chess_state_t* position) {
   
   if (is_draw(position)) {
-    return DRAW_SCORE_CENTIPAWNS;
+    return DRAW_SCORE;
   }
 
   if (is_checkmate(position)) {
-    return CHECKMATE_SCORE_CENTIPAWNS;
+    return CHECKMATE_SCORE;
   }
   
   if (is_stalemate(position)) {
-    return STALEMATE_SCORE_CENTIPAWNS;
+    return DRAW_SCORE;
   }
 
-  score_cp_t score =
-       + position->friendly_pieces->pawn_count         * PAWN_VALUE
-       - position->enemy_pieces->pawn_count            * PAWN_VALUE
-       + position->friendly_pieces->knight_count       * KNIGHT_VALUE
-       - position->enemy_pieces->knight_count          * KNIGHT_VALUE
-       + position->friendly_pieces->light_bishop_count * BISHOP_VALUE
-       - position->enemy_pieces->light_bishop_count    * BISHOP_VALUE
-       + position->friendly_pieces->dark_bishop_count  * BISHOP_VALUE
-       - position->enemy_pieces->dark_bishop_count     * BISHOP_VALUE
-       + position->friendly_pieces->rook_count         * ROOK_VALUE
-       - position->enemy_pieces->rook_count            * ROOK_VALUE
-       + position->friendly_pieces->queen_count        * QUEEN_VALUE
-       - position->enemy_pieces->queen_count           * QUEEN_VALUE;
+  centipawn_t score =
+       + position->friendly_pieces->pawn_count         * PAWN_SCORE
+       - position->enemy_pieces->pawn_count            * PAWN_SCORE
+       + position->friendly_pieces->knight_count       * KNIGHT_SCORE
+       - position->enemy_pieces->knight_count          * KNIGHT_SCORE
+       + position->friendly_pieces->light_bishop_count * BISHOP_SCORE
+       - position->enemy_pieces->light_bishop_count    * BISHOP_SCORE
+       + position->friendly_pieces->dark_bishop_count  * BISHOP_SCORE
+       - position->enemy_pieces->dark_bishop_count     * BISHOP_SCORE
+       + position->friendly_pieces->rook_count         * ROOK_SCORE
+       - position->enemy_pieces->rook_count            * ROOK_SCORE
+       + position->friendly_pieces->queen_count        * QUEEN_SCORE
+       - position->enemy_pieces->queen_count           * QUEEN_SCORE;
 
        score += material_score(position);
 
@@ -39,8 +39,8 @@ sq0x88_t flipped_square(sq0x88_t sq) {
                             sq0x88_to_file07(sq));
 }
 
-score_cp_t material_score(const chess_state_t* chess_state) {
-  score_cp_t score = 0;
+centipawn_t material_score(const chess_state_t* chess_state) {
+  centipawn_t score = 0;
 
   {
     sq0x88_t sq = chess_state->white_pieces.king_square;
@@ -103,15 +103,15 @@ score_cp_t material_score(const chess_state_t* chess_state) {
 }
 
 
-score_cp_t piece_value(sq0x88_t sq, piece_t p) {
+centipawn_t piece_value(sq0x88_t sq, piece_t p) {
   (void)sq;
   switch (p & PIECE_MASK) {
-    case PAWN: return PAWN_VALUE;
-    case KNIGHT: return KNIGHT_VALUE;
-    case BISHOP: return BISHOP_VALUE;
-    case ROOK: return ROOK_VALUE;
-    case QUEEN: return QUEEN_VALUE;
-    case KING: return KING_VALUE;
+    case PAWN: return PAWN_SCORE;
+    case KNIGHT: return KNIGHT_SCORE;
+    case BISHOP: return BISHOP_SCORE;
+    case ROOK: return ROOK_SCORE;
+    case QUEEN: return QUEEN_SCORE;
+    case KING: return KING_SCORE;
     default: return 0;
   }
 }

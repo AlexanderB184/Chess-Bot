@@ -1,4 +1,6 @@
-#include "../include/transposition_table.h"
+#include "../include/bot.h"
+
+#include <stdlib.h>
 
 // layout
 // 0..2 type
@@ -13,8 +15,8 @@ move_t entry_best_move(entry_t entry) {
   return uncompress_move(compressed_move);
 }
 
-score_cp_t entry_score(entry_t entry) {
-  return (score_cp_t)((entry >> 32) & 0xFFFF);
+centipawn_t entry_score(entry_t entry) {
+  return (centipawn_t)((entry >> 32) & 0xFFFF);
 }
 
 enum tt_entry_type entry_type(entry_t entry) {
@@ -25,7 +27,7 @@ int entry_depth(entry_t entry) { return (int)((entry >> 16) & 0xFF); }
 
 int entry_age(entry_t entry) { return (int)((entry >> 24) & 0xFF); }
 
-entry_t make_entry(enum tt_entry_type type, move_t best_move, score_cp_t score,
+entry_t make_entry(enum tt_entry_type type, move_t best_move, centipawn_t score,
                    int depth, int age) {
   return (entry_t)((entry_t)(type & 0x3) | ((entry_t)(age & 0xFF) << 24) |
                    ((entry_t)(depth & 0xFF) << 16) |
@@ -52,7 +54,7 @@ entry_t tt_get(table_t* table, zobrist_t key) {
 }
 
 void tt_store(table_t* table, zobrist_t key, enum tt_entry_type type,
-              move_t best_move, score_cp_t score, int depth, int age) {
+              move_t best_move, centipawn_t score, int depth, int age) {
   uint64_t index = key % table->capacity;
   entry_t entry = make_entry(type, best_move, score, depth, age);
   table->items[index].key = key ^ entry;
@@ -61,7 +63,7 @@ void tt_store(table_t* table, zobrist_t key, enum tt_entry_type type,
 
 void tt_store_depth_prefered(table_t* table, zobrist_t key,
                              enum tt_entry_type type, move_t best_move,
-                             score_cp_t score, int depth, int age) {
+                             centipawn_t score, int depth, int age) {
   uint64_t index = key % table->capacity;
   uint64_t stored_entry = table->items[index].entry;
   if (!stored_entry || entry_depth(stored_entry) < depth) {
@@ -72,7 +74,7 @@ void tt_store_depth_prefered(table_t* table, zobrist_t key,
 }
 
 void tt_store_pv(table_t* table, zobrist_t key, enum tt_entry_type type,
-                 move_t best_move, score_cp_t score, int depth, int age) {
+                 move_t best_move, centipawn_t score, int depth, int age) {
   if (type == TT_EXACT) {
     uint64_t index = key % table->capacity;
     entry_t entry = make_entry(type, best_move, score, depth, age);

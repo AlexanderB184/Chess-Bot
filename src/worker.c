@@ -1,12 +1,8 @@
-#include "../include/worker.h"
+#define _POSIX_C_SOURCE 199309L
 
 #include "../include/bot.h"
-#include "../include/search.h"
-#include "../include/move_order.h"
 
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC 0
-#endif
+#include <stdio.h>
 
 void bot_on_stop(bot_t* bot) {
     for (int id = 1; id < bot->n_threads; id++) {
@@ -29,7 +25,7 @@ void* worker_start(void* arg) {
   reset_butterfly_board(worker->butterfly_heuristic);
 
   while (!stop(worker)) {
-    rootSearch(worker, MIN_SCORE, MAX_SCORE, bot->depth_searched);
+    rootSearch(worker, MINSCORE, MAXSCORE, bot->depth_searched);
     bot->depth_searched++;
   }
 

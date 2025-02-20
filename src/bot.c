@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 199309L
+
 #include "../include/bot.h"
 
 #include <pthread.h>
@@ -5,13 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include "../include/search.h"
-#include "../include/worker.h"
-
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC 0
-#endif
 
 #define BOT_THREAD_COUNT_DEFAULT 1
 #define BOT_HASH_SIZE_MB_DEFAULT 4

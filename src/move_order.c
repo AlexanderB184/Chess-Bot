@@ -1,9 +1,11 @@
-#include "../include/move_order.h"
-
-#include "../include/killer_moves.h"
-#include "../include/see.h"
+#include "../include/bot.h"
+#include <string.h>
 
 #define FALLTHROUGH __attribute__((fallthrough))
+
+void reset_butterfly_board(int16_t* board) {
+  memset(board, 0, sizeof(int16_t) * BUTTERFLY_BOARD_SIZE);
+}
 
 void add_killer_move(compact_move_t* killer_moves, move_t move) {
   compact_move_t compressed_move = compress_move(move);

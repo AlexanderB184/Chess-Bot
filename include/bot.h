@@ -5,28 +5,48 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <time.h>
 
 #include "../include/chess.h"
 
-#define CHECKMATE_SCORE_CENTIPAWNS (score_cp_t)(-16384)
-#define STALEMATE_SCORE_CENTIPAWNS (score_cp_t)(0)
-#define DRAW_SCORE_CENTIPAWNS (score_cp_t)(0)
-#define MAX_SCORE (score_cp_t)(INT16_MAX)
-#define MIN_SCORE (score_cp_t)(-INT16_MAX)
+#define BUTTERFLY_BOARD_SIZE (64 * 64)
+#define MAX_KILLER_MOVES 2
 
-typedef int16_t score_cp_t;
-
-#include "transposition_table.h"
-#include "killer_moves.h"
-#include "move_order.h"
 
 struct match_state_t;
 struct bot_settings_t;
 struct bot_term_cond_t;
 struct bot_t;
 struct worker_t;
+
+enum tt_entry_type { TT_EMPTY = 0, TT_EXACT, TT_UPPER, TT_LOWER };
+
+// bitpacked data for transposition table entry
+// layout
+// 0..2 type
+// 2..16 unused
+// 16..24 age
+// 24..32 depth
+// 32..48 score
+// 48..64 best move
+typedef uint64_t entry_t;
+
+// key value paired stored using xor validation
+// key value is key ^ entry so to check if key matches do key == entry.key ^
+// entry.entry this guarantees correctness as if two threads write the key and
+// entry for a node simultaneously it will be invalidated
+// https://www.chessprogramming.org/Shared_Hash_Table#Xor
+typedef struct key_entry_pair_t {
+  zobrist_t key;
+  uint64_t entry;
+} key_entry_pair_t;
+
+// lockless shared transposition table
+// https://www.chessprogramming.org/Shared_Hash_Table#Xor
+typedef struct table_t {
+  volatile struct key_entry_pair_t* items;
+  uint64_t capacity;
+} table_t;
 
 typedef struct bot_settings_t {
   int debug;   // debug flag
@@ -93,7 +113,7 @@ typedef struct worker_t {
 
   chess_state_t position;
   int move_count;
-  score_cp_t scores[256];
+  centipawn_t scores[256];
   move_t moves[256];
   compact_move_t killer_moves[64][MAX_KILLER_MOVES];
   int root_ply;
@@ -110,7 +130,7 @@ typedef struct search_t {
 
   // root node info
   int root_move_count;
-  score_cp_t root_move_scores[256];
+  centipawn_t root_move_scores[256];
   move_t root_moves[256];
 
   table_t * transpo_table;
@@ -119,8 +139,6 @@ typedef struct search_t {
 
   int root_ply;
 } search_t;
-
-#define ALIAS_SEARCH_STATE
 
 /*
 typedef struct {
@@ -155,7 +173,197 @@ int bot_release(bot_t* bot);
 // called when the bot completes a search or the search is cancelled
 void bot_on_stop(bot_t* bot);
 
+// checks if bot is still running
 int bot_is_running(bot_t* bot);
+
+// waits until the bot finishes running
 int bot_wait(bot_t* bot);
+
+// begins search
+void* worker_start(void*);
+
+// checks if this thread is the main thread, i.e. the first thread in the thread list
+int is_main_thread(const worker_t*);
+
+// checks if termination condition is met or if the bots abort flag is set
+int stop(worker_t*);
+
+// logs info to gui
+void log_info();
+
+// returns correctly formatted bestmove to gui
+void bestmove(move_t bestmove, move_t ponder);
+
+// add killer move to killer move list
+void add_killer_move(compact_move_t* killer_moves, move_t move);
+
+centipawn_t static_exchange_evaluation(const chess_state_t* chess_state,
+  move_t move);
+
+static inline int butterfly_index(move_t move) {
+  int from = sq0x88_to_sq8x8(move.from);
+  int to = sq0x88_to_sq8x8(move.to);
+  return (to<<6)+from;
+}
+
+static inline void inc_butteryfly_board(int16_t* board, move_t move) {
+  board[butterfly_index(move)]++;
+}
+
+static inline int16_t get_butteryfly_board(int16_t* board, move_t move) {
+  return board[butterfly_index(move)];
+}
+
+void reset_butterfly_board(int16_t* board);
+
+enum move_order_state {
+  PRIORITY_PV_MOVE         = 0xA00,
+  PRIORITY_WINNING_CAPTURE = 0x800,
+  PRIORITY_NEUTRAL_CAPTURE = 0x600,
+  PRIORITY_KILLER_MOVES    = 0x400,
+  PRIORITY_LOSING_CAPTURE  = 0x200,
+  PRIORITY_QUIET_MOVE      = 0x000,
+};
+
+typedef struct move_list_t {
+  move_t moves[256];
+  size_t move_count;
+  move_t hash_move;
+  compact_move_t* killer_moves;
+  int16_t* bh, *hh;
+  enum move_order_state state;
+} move_list_t;
+
+void init_move_list(const chess_state_t* position, move_list_t* move_list, move_t hash_move, compact_move_t* killer_moves, int16_t*,int16_t*);
+move_t next_move(const chess_state_t* position, move_list_t* move_list);
+move_t next_capture(const chess_state_t* position, move_list_t* move_list);
+
+move_t entry_best_move(entry_t entry);
+centipawn_t entry_score(entry_t entry);
+enum tt_entry_type entry_type(entry_t entry);
+int entry_depth(entry_t entry);
+int entry_age(entry_t entry);
+
+entry_t make_entry(enum tt_entry_type type, move_t best_move, centipawn_t score,
+                   int depth, int age);
+
+void tt_init(table_t* table, uint64_t capacity);
+void tt_free(table_t* table);
+
+entry_t tt_get(table_t* table, zobrist_t key);
+
+// stores using always replace policy
+void tt_store(table_t* table, zobrist_t key, enum tt_entry_type type,
+              move_t best_move, centipawn_t score, int depth, int age);
+
+// stores using depth prefered policy
+void tt_store_depth_prefered(table_t* table, zobrist_t key,
+                             enum tt_entry_type type, move_t best_move,
+                             centipawn_t score, int depth, int age);
+
+// only stores node if it is an exact node
+void tt_store_pv(table_t* table, zobrist_t key, enum tt_entry_type type,
+                 move_t best_move, centipawn_t score, int depth, int age);
+
+int      rootSearch(worker_t* worker, centipawn_t alpha, centipawn_t beta, int depth);
+centipawn_t abSearch(worker_t* worker, centipawn_t alpha, centipawn_t beta, int depth);
+centipawn_t  qSearch(worker_t* worker, centipawn_t alpha, centipawn_t beta, int depth);
+
+
+centipawn_t piece_value(sq0x88_t, piece_t piece);
+
+centipawn_t material_score(const chess_state_t*);
+
+/*
+
+score_centipawn_t mobility_score(const chess_state_t*);
+
+score_centipawn_t pawn_weakness_score(const chess_state_t*);
+
+score_centipawn_t static_evaluation(const chess_state_t*);
+
+
+
+score_centipawn_t board_value(const chess_state_t*, sq0x88_t);
+
+score_centipawn_t pawn_value(sq0x88_t square, piece_t colour);
+
+score_centipawn_t knight_value(sq0x88_t square, piece_t colour);
+
+score_centipawn_t bishop_value(sq0x88_t square, piece_t colour);
+
+score_centipawn_t rook_value(sq0x88_t square, piece_t colour);
+
+score_centipawn_t queen_value(sq0x88_t square, piece_t colour);
+
+score_centipawn_t king_value(sq0x88_t square, piece_t colour);
+*/
+
+
+centipawn_t eval(const chess_state_t* position);
+
+int is_repetition(const chess_state_t* position, int ply_of_root);
+
+static const centipawn_t king_square_table[64] = {
+     20,  50,   0, -10, -25,  50,  60,  20,
+     10,  20, -50, -75, -50,  20,  20,  10,
+     10, -20, -75,-100,-100, -50, -50,  10,
+    -20, -50,-110,-110,-110,-110,-110, -20,
+   -125,-125,-125,-125,-125,-125,-125,-125,
+   -150,-150,-150,-150,-150,-150,-150,-150, 
+   -175,-175,-175,-175,-175,-175,-175,-175,
+   -200,-200,-200,-200,-200,-200,-200,-200,
+};
+static const centipawn_t queen_square_table[64] = {
+      0,   5,  10,  10,   5,   5,   5,   0,
+      0,   5,  20,  15,  10,   5,  10,   0,
+      0,  20,   0,   0,   0,  10,   0,   0,
+     15,   0,   0,   0,   0,   0,   5,   0,
+      0,   0,   0,   0,   0,   0,   0,   5,
+      0,   0,   0,   0,   0,   0,   0,   0, 
+      0,   0,   0,   0,   0,   0,   0,   0,
+    -10, -10, -10, -10, -10, -10, -10, -10,
+};
+static const centipawn_t rook_square_table[64] = {
+      0,  10,  20,  30,  30,  20,  10,   0,
+     10,   0,   0,  20,  20,   0,   0,  10,
+     20,   0,   0,   0,   0,   0,   0,  20,
+     30,   0,   0,   0,   0,   0,   0,  30,
+     30,   0,   0,   0,   0,   0,   0,  30,
+     20,   0,   0,   0,   0,   0,   0,  20, 
+     50,  50,  50,  50,  50,  50,  50,  50,
+      0,  10,  20,  30,  30,  20,  10,   0,
+};
+static const centipawn_t bishop_square_table[64] = {
+     10,  -5,  -5,  -5,  -5,  -5,  -5,  10,
+      5,  20,  10,  20,  20,  10,  20,   0,
+     10,   0,   5,  20,  20,   5,   0,  10,
+      0,   0,  20,  10,  10,  20,   0,   0,
+      0,   0,   0,  10,  10,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0, 
+      0,   0,   0,   0,   0,   0,   0,   0,
+    -10,   0,   0,   0,   0,   0,   0, -10,
+};
+static const centipawn_t knight_square_table[64] = { // 10 for each plmove
+   -100, -10, -10, -10, -10, -10, -10,-100,
+    -40,   0,  10,  10,  10,  10,   0, -40,
+    -20,   0,  20,  20,  20,  20,   0, -20,
+    -10,   0,  20,  40,  40,  20,   0, -10,
+    -10,   0,  20,  40,  40,  20,   0, -10,
+    -20,   0,  20,  20,  20,  20,   0, -20, 
+    -60, -40, -10, -10, -10, -10, -40, -60,
+   -100, -80, -50, -50, -50, -50, -80,-100,
+};
+
+static const centipawn_t pawn_square_table[64] = {
+      0,   0,   0,   0,   0,   0,   0,   0,
+     50,  50, -10, -10, -10,  15,  35,  50,
+     10,  10,   5,   5,   5,  10,  10,  10,
+     20, -10,  20,  20,  20,   5, -10,  20,
+     30,  10,  30,  30,  30,  15,  10,  30,
+     75,  75,  75,  75,  75,  75,  75,  75, 
+    200, 200, 200, 200, 200, 200, 200, 200,
+      0,   0,   0,   0,   0,   0,   0,   0,
+    };
 
 #endif
