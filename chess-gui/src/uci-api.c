@@ -247,7 +247,7 @@ int uci_send_ponderhit(bot_interface_t* bot_iface) {
     return uci_send(bot_iface, "ponderhit");
 }
 int uci_send_quit(bot_interface_t* bot_iface) {
-    return uci_send(bot_iface, "quite");
+    return uci_send(bot_iface, "quit");
 }
 
 long uci_read_block(bot_interface_t* bot_iface, char* msg_buffer, long buffer_size) {
