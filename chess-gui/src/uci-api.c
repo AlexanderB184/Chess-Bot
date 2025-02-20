@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <ctype.h>
 
-char * next_arg(char** line_ptr) {
+char * uci_next_arg(char** line_ptr) {
     char* line = *line_ptr;
     while (*line && isspace(*line)) {
         line++;
@@ -97,9 +97,9 @@ int create_bot(bot_interface_t* bot_iface, const char* path) {
   do {
     uci_read_block(bot_iface, buffer, sizeof(buffer));
     char* line = buffer;
-    char* arg = next_arg(&line);
+    char* arg = uci_next_arg(&line);
     if (strncmp(arg, "id", 2) == 0) {
-      arg = next_arg(&line);
+      arg = uci_next_arg(&line);
       if (strncmp(arg, "name", 4) == 0) {
         bot_iface->name = strdup(line);
       }
@@ -273,9 +273,9 @@ long uci_read_bestmove(bot_interface_t* bot_iface, chess_state_t* position, move
       return 0;
     }
     char * line = msg_buffer;
-    char * arg = next_arg(&line);
+    char * arg = uci_next_arg(&line);
     if (strncmp(arg, "bestmove", 8) == 0) {
-      arg = next_arg(&line);
+      arg = uci_next_arg(&line);
       long bytes_left = sizeof(msg_buffer) - (line - msg_buffer);
       int out;
       out = read_long_algebraic_notation(arg, bytes_left, position, bestmove);
@@ -285,7 +285,7 @@ long uci_read_bestmove(bot_interface_t* bot_iface, chess_state_t* position, move
       }
       return 0;
       // check if ponder token exists
-      arg = next_arg(&line);
+      arg = uci_next_arg(&line);
       bytes_left = sizeof(msg_buffer) - (line - msg_buffer);
       printf("%ld\n", bytes_left);
       out = read_long_algebraic_notation(arg, bytes_left, position, ponder);

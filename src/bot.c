@@ -47,24 +47,19 @@ int bot_load_fen(bot_t* bot, const char* pos_text) {
   return load_position(root_position, pos_text);
 }
 
-int bot_load_moves(bot_t* bot, const char* movetext) {
+int bot_load_move(bot_t* bot, const char* movetext) {
   chess_state_t* root_position = &bot->root_position;
-  long bytes_read = skip_whitespace(movetext);
   long bytes_to_read = strlen(movetext);
-  while (bytes_read < bytes_to_read) {
-    move_t move;
-    long out = read_long_algebraic_notation(movetext + bytes_read,
-                                            bytes_to_read - bytes_read,
-                                            root_position, &move);
-    if (out == -1) {
-      release_position(root_position);
-      return -1;
-    }
-    bytes_read += out;
-    bytes_read += skip_whitespace(movetext + bytes_read);
-    make_move(root_position, move);
+  move_t move;
+  long out = read_long_algebraic_notation(movetext, bytes_to_read, root_position, &move);
+  
+  if (out == -1) {
+    release_position(root_position);
+    return -1;
   }
-  return bytes_read;
+  make_move(root_position, move);
+  
+  return out;
 }
 
 int bot_start(bot_t* bot) {

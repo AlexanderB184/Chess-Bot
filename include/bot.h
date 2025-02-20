@@ -137,8 +137,8 @@ int bot_init(bot_t* bot, bot_settings_t* settings);
 // loads the fen string into position
 int bot_load_fen(bot_t* bot, const char* postext);
 
-// loads the moves into position
-int bot_load_moves(bot_t* bot, const char* movetext);
+// loads a move into position
+int bot_load_move(bot_t* bot, const char* movetext);
 
 // starts the bot
 int bot_start(bot_t* bot);
