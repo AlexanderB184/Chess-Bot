@@ -1,10 +1,12 @@
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 
 #include "../include/bot.h"
 
 #define AUTHOR "Alex B"
-#define BOT_NAME "ABBOT"
+#define BOT_NAME "PieceMeal"
 #define BOT_VERSION "0.1.4"
 
 #define UNIMPLEMENTED fprintf(stderr, "unimplemented\n")
