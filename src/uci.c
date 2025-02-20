@@ -1,17 +1,7 @@
-#include <ctype.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <errno.h>
 
 #include "../include/bot.h"
-#include "../include/search.h"
-
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC 0
-#endif
 
 #define AUTHOR "Alex B"
 #define BOT_NAME "ABBOT"
@@ -329,7 +319,7 @@ void handle_command() {
 
     } else if (uci_strcmp(arg, "quit")) {
       quit();
-      
+
     } else {
       LOGERROR("\"%.*s\" is not a valid command", arglen, arg);
       continue;
